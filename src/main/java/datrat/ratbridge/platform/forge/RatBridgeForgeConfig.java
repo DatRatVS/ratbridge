@@ -1,9 +1,9 @@
-package datrat.simplebridge.platform.forge;
+package datrat.ratbridge.platform.forge;
 
-import datrat.simplebridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.BridgeConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 
-public final class SimpleBridgeForgeConfig {
+public final class RatBridgeForgeConfig {
     public static final ForgeConfigSpec SPEC;
 
     private static final ForgeConfigSpec.BooleanValue ENABLED;
@@ -27,11 +27,11 @@ public final class SimpleBridgeForgeConfig {
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
-        ENABLED = builder.comment("Enable or disable Simple Bridge without removing the mod.").define("enabled", true);
+        ENABLED = builder.comment("Enable or disable RatBridge without removing the mod.").define("enabled", true);
         CLIENT = builder.comment("Client to bridge with. Initial supported value: discord.").define("client", "discord");
         MODE = builder.comment("Discord mode: bot or selfbot. Selfbot can violate Discord terms and can get the account banned.").define("mode", "bot");
         TOKEN = builder.comment("Discord token. Prefer tokenEnv on shared servers.").define("token", "");
-        TOKEN_ENV = builder.comment("Environment variable used when token is empty.").define("tokenEnv", "SIMPLEBRIDGE_DISCORD_TOKEN");
+        TOKEN_ENV = builder.comment("Environment variable used when token is empty.").define("tokenEnv", "RATBRIDGE_DISCORD_TOKEN");
         SERVER_ID = builder.comment("Discord guild/server ID. Required in bot mode.").define("serverId", "");
         CHANNEL_ID = builder.comment("Discord channel ID. Required in bot mode and selfbot mode. Selfbot supports DM and Group DM channel IDs.").define("channelId", "");
         ENABLE_SELF_BOT = builder.comment("Explicit opt-in for selfbot mode. Discord forbids selfbots and the account can be banned.").define("enableSelfbot", false);
@@ -51,7 +51,7 @@ public final class SimpleBridgeForgeConfig {
         SPEC = builder.build();
     }
 
-    private SimpleBridgeForgeConfig() {
+    private RatBridgeForgeConfig() {
     }
 
     public static BridgeConfig snapshot() {

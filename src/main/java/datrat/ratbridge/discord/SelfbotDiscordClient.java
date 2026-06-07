@@ -1,14 +1,14 @@
-package datrat.simplebridge.discord;
+package datrat.ratbridge.discord;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import datrat.simplebridge.SimpleBridge;
-import datrat.simplebridge.bridge.BridgeConfig;
-import datrat.simplebridge.bridge.DiscordBridgeClient;
-import datrat.simplebridge.bridge.DiscordInboundMessage;
+import datrat.ratbridge.RatBridge;
+import datrat.ratbridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.DiscordBridgeClient;
+import datrat.ratbridge.bridge.DiscordInboundMessage;
 
 import java.io.IOException;
 import java.net.URI;
@@ -42,14 +42,14 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
 
     @Override
     public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) throws Exception {
-        SimpleBridge.LOGGER.warn("Simple Bridge selfbot mode uses a normal Discord user token. Discord forbids selfbots and the account can be banned.");
+        RatBridge.LOGGER.warn("RatBridge selfbot mode uses a normal Discord user token. Discord forbids selfbots and the account can be banned.");
         this.config = config;
         this.inboundConsumer = inboundConsumer;
         this.token = config.resolvedToken(System::getenv);
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.selfUserId = fetchSelfUserId();
         this.poller = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "SimpleBridge-Selfbot-Poller");
+            Thread thread = new Thread(runnable, "RatBridge-Selfbot-Poller");
             thread.setDaemon(true);
             return thread;
         });
@@ -77,11 +77,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         return http.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                 .thenAccept(response -> {
                     if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        SimpleBridge.LOGGER.warn("Discord selfbot send failed with HTTP {}", response.statusCode());
+                        RatBridge.LOGGER.warn("Discord selfbot send failed with HTTP {}", response.statusCode());
                     }
                 })
                 .exceptionally(error -> {
-                    SimpleBridge.LOGGER.warn("Discord selfbot send failed", error);
+                    RatBridge.LOGGER.warn("Discord selfbot send failed", error);
                     return null;
                 });
     }
@@ -111,7 +111,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         try {
             pollMessages();
         } catch (Exception error) {
-            SimpleBridge.LOGGER.warn("Discord selfbot poll failed", error);
+            RatBridge.LOGGER.warn("Discord selfbot poll failed", error);
         }
     }
 
@@ -123,11 +123,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
                 .build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 429) {
-            SimpleBridge.LOGGER.warn("Discord selfbot polling is rate limited");
+            RatBridge.LOGGER.warn("Discord selfbot polling is rate limited");
             return;
         }
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            SimpleBridge.LOGGER.warn("Discord selfbot poll failed with HTTP {}", response.statusCode());
+            RatBridge.LOGGER.warn("Discord selfbot poll failed with HTTP {}", response.statusCode());
             return;
         }
 
@@ -195,7 +195,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "SimpleBridge/0.1");
+                .header("User-Agent", "RatBridge/0.1.1");
     }
 
     private URI channelUri(String suffix) {

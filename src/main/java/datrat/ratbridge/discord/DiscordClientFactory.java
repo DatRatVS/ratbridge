@@ -1,7 +1,7 @@
-package datrat.simplebridge.discord;
+package datrat.ratbridge.discord;
 
-import datrat.simplebridge.bridge.BridgeConfig;
-import datrat.simplebridge.bridge.DiscordBridgeClient;
+import datrat.ratbridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.DiscordBridgeClient;
 
 public final class DiscordClientFactory {
     private DiscordClientFactory() {

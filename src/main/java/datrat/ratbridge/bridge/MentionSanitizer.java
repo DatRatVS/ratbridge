@@ -1,4 +1,4 @@
-package datrat.simplebridge.bridge;
+package datrat.ratbridge.bridge;
 
 public final class MentionSanitizer {
     private static final char ZERO_WIDTH_SPACE = '\u200B';

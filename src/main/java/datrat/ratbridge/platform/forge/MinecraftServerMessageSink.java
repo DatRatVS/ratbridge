@@ -1,6 +1,6 @@
-package datrat.simplebridge.platform.forge;
+package datrat.ratbridge.platform.forge;
 
-import datrat.simplebridge.bridge.MinecraftMessageSink;
+import datrat.ratbridge.bridge.MinecraftMessageSink;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 

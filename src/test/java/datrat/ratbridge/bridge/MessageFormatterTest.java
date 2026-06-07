@@ -1,4 +1,4 @@
-package datrat.simplebridge.bridge;
+package datrat.ratbridge.bridge;
 
 import org.junit.jupiter.api.Test;
 

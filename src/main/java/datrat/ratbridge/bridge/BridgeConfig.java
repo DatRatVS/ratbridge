@@ -1,4 +1,4 @@
-package datrat.simplebridge.bridge;
+package datrat.ratbridge.bridge;
 
 import java.util.ArrayList;
 import java.util.List;

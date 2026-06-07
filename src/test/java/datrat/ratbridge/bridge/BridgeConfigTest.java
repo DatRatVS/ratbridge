@@ -1,4 +1,4 @@
-package datrat.simplebridge.bridge;
+package datrat.ratbridge.bridge;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +25,7 @@ final class BridgeConfigTest {
     void botConfigCanResolveTokenFromEnvironment() {
         BridgeConfig config = base("bot", "", "123", "456", false);
 
-        ValidationResult result = config.validate(env(Map.of("SIMPLEBRIDGE_DISCORD_TOKEN", "abc")));
+        ValidationResult result = config.validate(env(Map.of("RATBRIDGE_DISCORD_TOKEN", "abc")));
 
         assertTrue(result.valid());
     }
@@ -77,7 +77,7 @@ final class BridgeConfigTest {
     }
 
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
-        return new BridgeConfig(true, "discord", mode, token, "SIMPLEBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
+        return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");

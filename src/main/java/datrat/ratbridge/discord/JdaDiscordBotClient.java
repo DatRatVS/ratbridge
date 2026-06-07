@@ -1,9 +1,9 @@
-package datrat.simplebridge.discord;
+package datrat.ratbridge.discord;
 
-import datrat.simplebridge.SimpleBridge;
-import datrat.simplebridge.bridge.BridgeConfig;
-import datrat.simplebridge.bridge.DiscordBridgeClient;
-import datrat.simplebridge.bridge.DiscordInboundMessage;
+import datrat.ratbridge.RatBridge;
+import datrat.ratbridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.DiscordBridgeClient;
+import datrat.ratbridge.bridge.DiscordInboundMessage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Message;
@@ -55,7 +55,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         targetChannel.sendMessage(message).queue(
                 sent -> future.complete(null),
                 error -> {
-                    SimpleBridge.LOGGER.warn("Failed to send Discord bot message", error);
+                    RatBridge.LOGGER.warn("Failed to send Discord bot message", error);
                     future.complete(null);
                 }
         );
