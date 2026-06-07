@@ -1,6 +1,5 @@
 package datrat.ratbridge.discord;
 
-import datrat.ratbridge.RatBridge;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.DiscordBridgeClient;
 import datrat.ratbridge.bridge.DiscordInboundMessage;
@@ -16,8 +15,12 @@ import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class JdaDiscordBotClient implements DiscordBridgeClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger("RatBridge");
+
     private JDA jda;
     private MessageChannel targetChannel;
 
@@ -55,7 +58,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         targetChannel.sendMessage(message).queue(
                 sent -> future.complete(null),
                 error -> {
-                    RatBridge.LOGGER.warn("Failed to send Discord bot message", error);
+                    LOGGER.warn("Failed to send Discord bot message", error);
                     future.complete(null);
                 }
         );

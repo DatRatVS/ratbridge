@@ -21,3 +21,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'ratbridge'
+
+include 'common'
+include 'forge-1.20.1'

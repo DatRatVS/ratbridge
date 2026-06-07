@@ -1,0 +1,25 @@
+plugins {
+    id 'java-library'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+
+dependencies {
+    implementation("net.dv8tion:JDA:${jda_version}") {
+        exclude module: 'opus-java'
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
+
+    compileOnly 'org.slf4j:slf4j-api:2.0.1'
+    compileOnly 'com.google.code.gson:gson:2.10'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+tasks.named('test').configure {
+    useJUnitPlatform()
+}

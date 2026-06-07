@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import datrat.ratbridge.RatBridge;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.DiscordBridgeClient;
 import datrat.ratbridge.bridge.DiscordInboundMessage;
@@ -27,10 +26,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private static final String API_BASE = "https://discord.com/api/v10";
     private static final Gson GSON = new Gson();
+    private static final Logger LOGGER = LoggerFactory.getLogger("RatBridge");
 
     private HttpClient http;
     private ScheduledExecutorService poller;
@@ -42,7 +44,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
 
     @Override
     public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) throws Exception {
-        RatBridge.LOGGER.warn("RatBridge selfbot mode uses a normal Discord user token. Discord forbids selfbots and the account can be banned.");
+        LOGGER.warn("RatBridge selfbot mode uses a normal Discord user token. Discord forbids selfbots and the account can be banned.");
         this.config = config;
         this.inboundConsumer = inboundConsumer;
         this.token = config.resolvedToken(System::getenv);
@@ -77,11 +79,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         return http.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                 .thenAccept(response -> {
                     if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        RatBridge.LOGGER.warn("Discord selfbot send failed with HTTP {}", response.statusCode());
+                        LOGGER.warn("Discord selfbot send failed with HTTP {}", response.statusCode());
                     }
                 })
                 .exceptionally(error -> {
-                    RatBridge.LOGGER.warn("Discord selfbot send failed", error);
+                    LOGGER.warn("Discord selfbot send failed", error);
                     return null;
                 });
     }
@@ -111,7 +113,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         try {
             pollMessages();
         } catch (Exception error) {
-            RatBridge.LOGGER.warn("Discord selfbot poll failed", error);
+            LOGGER.warn("Discord selfbot poll failed", error);
         }
     }
 
@@ -123,11 +125,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
                 .build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 429) {
-            RatBridge.LOGGER.warn("Discord selfbot polling is rate limited");
+            LOGGER.warn("Discord selfbot polling is rate limited");
             return;
         }
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            RatBridge.LOGGER.warn("Discord selfbot poll failed with HTTP {}", response.statusCode());
+            LOGGER.warn("Discord selfbot poll failed with HTTP {}", response.statusCode());
             return;
         }
 

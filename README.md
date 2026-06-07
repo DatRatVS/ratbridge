@@ -142,7 +142,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon clean build
 The built JAR will be located at:
 
 ```text
-build/libs/ratbridge-0.1.1.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.1.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.
