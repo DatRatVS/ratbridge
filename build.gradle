@@ -1,0 +1,118 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.gradleup.shadow' version '8.3.8'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    copyIdeResources = true
+}
+
+configurations {
+    shade
+    implementation.extendsFrom(shade)
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    shade("net.dv8tion:JDA:${jda_version}") {
+        exclude module: 'opus-java'
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    archiveClassifier = 'thin'
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_authors,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+tasks.named('shadowJar').configure {
+    archiveClassifier = ''
+    configurations = [project.configurations.shade]
+    mergeServiceFiles()
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    exclude 'module-info.class'
+    exclude 'META-INF/versions/**/module-info.class'
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/*.kotlin_module'
+
+    relocate 'net.dv8tion.jda', 'datrat.simplebridge.shadow.net.dv8tion.jda'
+    relocate 'okhttp3', 'datrat.simplebridge.shadow.okhttp3'
+    relocate 'okio', 'datrat.simplebridge.shadow.okio'
+    relocate 'kotlin', 'datrat.simplebridge.shadow.kotlin'
+    relocate 'com.fasterxml.jackson', 'datrat.simplebridge.shadow.com.fasterxml.jackson'
+    relocate 'com.neovisionaries', 'datrat.simplebridge.shadow.com.neovisionaries'
+    relocate 'com.google.crypto', 'datrat.simplebridge.shadow.com.google.crypto'
+    relocate 'com.google.protobuf', 'datrat.simplebridge.shadow.com.google.protobuf'
+    relocate 'com.google.errorprone', 'datrat.simplebridge.shadow.com.google.errorprone'
+    relocate 'com.google.j2objc', 'datrat.simplebridge.shadow.com.google.j2objc'
+    relocate 'gnu.trove', 'datrat.simplebridge.shadow.gnu.trove'
+    relocate 'org.apache.commons.collections4', 'datrat.simplebridge.shadow.org.apache.commons.collections4'
+    relocate 'org.intellij.lang.annotations', 'datrat.simplebridge.shadow.org.intellij.lang.annotations'
+    relocate 'org.jetbrains.annotations', 'datrat.simplebridge.shadow.org.jetbrains.annotations'
+    relocate 'javax.annotation', 'datrat.simplebridge.shadow.javax.annotation'
+}
+
+reobf {
+    shadowJar {}
+}
+
+tasks.named('build').configure {
+    dependsOn 'reobfShadowJar'
+}
+
+tasks.named('test').configure {
+    useJUnitPlatform()
+}

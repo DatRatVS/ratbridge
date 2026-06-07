@@ -1,0 +1,18 @@
+package datrat.simplebridge.platform.forge;
+
+import datrat.simplebridge.bridge.MinecraftMessageSink;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+
+public final class MinecraftServerMessageSink implements MinecraftMessageSink {
+    private final MinecraftServer server;
+
+    public MinecraftServerMessageSink(MinecraftServer server) {
+        this.server = server;
+    }
+
+    @Override
+    public void sendSystemMessage(String message) {
+        server.execute(() -> server.getPlayerList().broadcastSystemMessage(Component.literal(message), false));
+    }
+}
