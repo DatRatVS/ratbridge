@@ -19,6 +19,7 @@ public record BridgeConfig(
         boolean syncPlayerLeave,
         boolean syncServerStart,
         boolean syncServerStop,
+        int selfbotPollIntervalMillis,
         String minecraftToDiscordFormat,
         String discordToMinecraftFormat,
         String eventFormat
@@ -74,6 +75,10 @@ public record BridgeConfig(
 
         if ("selfbot".equals(resolvedMode) && !enableSelfbot) {
             errors.add("selfbot mode requires enableSelfbot = true; selfbots can violate Discord terms and can get the account banned");
+        }
+
+        if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {
+            errors.add("selfbotPollIntervalMillis must be at least 500");
         }
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.invalid(errors);

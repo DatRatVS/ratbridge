@@ -51,13 +51,15 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         if (targetChannel == null || message.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
-        return targetChannel.sendMessage(message).submit()
-                .thenAccept(sent -> {
-                })
-                .exceptionally(error -> {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        targetChannel.sendMessage(message).queue(
+                sent -> future.complete(null),
+                error -> {
                     SimpleBridge.LOGGER.warn("Failed to send Discord bot message", error);
-                    return null;
-                });
+                    future.complete(null);
+                }
+        );
+        return future;
     }
 
     @Override
@@ -84,7 +86,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         }
 
         Message message = event.getMessage();
-        String content = message.getContentDisplay();
+        String content = message.getContentRaw();
         String attachments = message.getAttachments().stream()
                 .map(Message.Attachment::getUrl)
                 .collect(Collectors.joining(" "));

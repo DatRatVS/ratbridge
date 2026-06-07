@@ -50,9 +50,23 @@ final class BridgeConfigTest {
     }
 
     @Test
+    void selfbotPollIntervalHasMinimum() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                true, true, true, true, true,
+                250,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("selfbotPollIntervalMillis must be at least 500"));
+    }
+
+    @Test
     void unsupportedClientAndModeAreInvalid() {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
                 true, true, true, true, true,
+                750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -65,6 +79,7 @@ final class BridgeConfigTest {
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "SIMPLEBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 true, true, true, true, true,
+                750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
     }
 

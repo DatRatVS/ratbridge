@@ -13,6 +13,11 @@ public final class MinecraftServerMessageSink implements MinecraftMessageSink {
 
     @Override
     public void sendSystemMessage(String message) {
-        server.execute(() -> server.getPlayerList().broadcastSystemMessage(Component.literal(message), false));
+        Runnable broadcast = () -> server.getPlayerList().broadcastSystemMessage(Component.literal(message), false);
+        if (server.isSameThread()) {
+            broadcast.run();
+        } else {
+            server.execute(broadcast);
+        }
     }
 }

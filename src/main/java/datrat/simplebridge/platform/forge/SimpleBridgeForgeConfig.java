@@ -19,6 +19,7 @@ public final class SimpleBridgeForgeConfig {
     private static final ForgeConfigSpec.BooleanValue SYNC_PLAYER_LEAVE;
     private static final ForgeConfigSpec.BooleanValue SYNC_SERVER_START;
     private static final ForgeConfigSpec.BooleanValue SYNC_SERVER_STOP;
+    private static final ForgeConfigSpec.IntValue SELFBOT_POLL_INTERVAL_MILLIS;
     private static final ForgeConfigSpec.ConfigValue<String> MINECRAFT_TO_DISCORD_FORMAT;
     private static final ForgeConfigSpec.ConfigValue<String> DISCORD_TO_MINECRAFT_FORMAT;
     private static final ForgeConfigSpec.ConfigValue<String> EVENT_FORMAT;
@@ -40,6 +41,8 @@ public final class SimpleBridgeForgeConfig {
         SYNC_PLAYER_LEAVE = builder.define("syncPlayerLeave", true);
         SYNC_SERVER_START = builder.define("syncServerStart", true);
         SYNC_SERVER_STOP = builder.define("syncServerStop", true);
+        SELFBOT_POLL_INTERVAL_MILLIS = builder.comment("Selfbot DM/Group DM polling interval in milliseconds. Lower values reduce delay but can hit Discord rate limits faster.")
+                .defineInRange("selfbotPollIntervalMillis", 750, 500, 60_000);
 
         MINECRAFT_TO_DISCORD_FORMAT = builder.define("minecraftToDiscordFormat", "[MC] <{player}> {message}");
         DISCORD_TO_MINECRAFT_FORMAT = builder.define("discordToMinecraftFormat", "[Discord] <{author}> {message}");
@@ -66,6 +69,7 @@ public final class SimpleBridgeForgeConfig {
                 SYNC_PLAYER_LEAVE.get(),
                 SYNC_SERVER_START.get(),
                 SYNC_SERVER_STOP.get(),
+                SELFBOT_POLL_INTERVAL_MILLIS.get(),
                 MINECRAFT_TO_DISCORD_FORMAT.get(),
                 DISCORD_TO_MINECRAFT_FORMAT.get(),
                 EVENT_FORMAT.get()

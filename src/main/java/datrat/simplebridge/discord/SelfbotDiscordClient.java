@@ -53,7 +53,12 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
             thread.setDaemon(true);
             return thread;
         });
-        this.poller.scheduleWithFixedDelay(this::pollMessagesSafely, 0, 3, TimeUnit.SECONDS);
+        this.poller.scheduleWithFixedDelay(
+                this::pollMessagesSafely,
+                0,
+                config.selfbotPollIntervalMillis(),
+                TimeUnit.MILLISECONDS
+        );
     }
 
     @Override
