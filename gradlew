@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-GRADLE_VERSION="8.8"
+GRADLE_VERSION="8.14.3"
 DIST_NAME="gradle-${GRADLE_VERSION}-bin"
 DIST_URL="https://services.gradle.org/distributions/${DIST_NAME}.zip"
 BASE_DIR="${GRADLE_USER_HOME:-"$HOME/.gradle"}/wrapper/dists/${DIST_NAME}"

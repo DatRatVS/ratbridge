@@ -1,0 +1,95 @@
+plugins {
+    id 'fabric-loom'
+    id 'com.gradleup.shadow'
+}
+
+base {
+    archivesName = "${mod_id}-fabric-${fabric_minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+
+configurations {
+    shade
+    implementation.extendsFrom(shade)
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${fabric_minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    implementation project(':common')
+    shade project(':common')
+
+    shade("net.dv8tion:JDA:${jda_version}") {
+        exclude module: 'opus-java'
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    def replaceProperties = [
+            fabric_minecraft_version      : fabric_minecraft_version,
+            fabric_minecraft_version_range: fabric_minecraft_version_range,
+            fabric_loader_version         : fabric_loader_version,
+            mod_id                        : mod_id,
+            mod_name                      : mod_name,
+            mod_license                   : mod_license,
+            mod_version                   : mod_version,
+            mod_authors                   : mod_authors,
+            mod_description               : mod_description
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching('fabric.mod.json') {
+        expand replaceProperties
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    archiveClassifier = 'thin'
+}
+
+tasks.named('shadowJar').configure {
+    archiveClassifier = 'dev-shadow'
+    configurations = [project.configurations.shade]
+    mergeServiceFiles()
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    exclude 'module-info.class'
+    exclude 'META-INF/versions/**/module-info.class'
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/*.kotlin_module'
+
+    relocate 'net.dv8tion.jda', 'datrat.ratbridge.shadow.net.dv8tion.jda'
+    relocate 'okhttp3', 'datrat.ratbridge.shadow.okhttp3'
+    relocate 'okio', 'datrat.ratbridge.shadow.okio'
+    relocate 'kotlin', 'datrat.ratbridge.shadow.kotlin'
+    relocate 'com.fasterxml.jackson', 'datrat.ratbridge.shadow.com.fasterxml.jackson'
+    relocate 'com.neovisionaries', 'datrat.ratbridge.shadow.com.neovisionaries'
+    relocate 'com.google.crypto', 'datrat.ratbridge.shadow.com.google.crypto'
+    relocate 'com.google.protobuf', 'datrat.ratbridge.shadow.com.google.protobuf'
+    relocate 'com.google.errorprone', 'datrat.ratbridge.shadow.com.google.errorprone'
+    relocate 'com.google.j2objc', 'datrat.ratbridge.shadow.com.google.j2objc'
+    relocate 'gnu.trove', 'datrat.ratbridge.shadow.gnu.trove'
+    relocate 'org.apache.commons.collections4', 'datrat.ratbridge.shadow.org.apache.commons.collections4'
+    relocate 'org.intellij.lang.annotations', 'datrat.ratbridge.shadow.org.intellij.lang.annotations'
+    relocate 'org.jetbrains.annotations', 'datrat.ratbridge.shadow.org.jetbrains.annotations'
+    relocate 'javax.annotation', 'datrat.ratbridge.shadow.javax.annotation'
+}
+
+tasks.named('remapJar').configure {
+    dependsOn tasks.named('shadowJar')
+    inputFile.set(tasks.named('shadowJar').flatMap { it.archiveFile })
+    archiveClassifier = ''
+}
+
+tasks.named('build').configure {
+    dependsOn tasks.named('remapJar')
+}
