@@ -110,23 +110,62 @@ public final class BridgeConfigFile {
     }
 
     private static String defaultConfigToml(Map<String, String> values) {
-        return "enabled = " + boolString(values, "enabled", true) + "\n"
+        return """
+                # Main RatBridge settings.
+                # This file controls which external service/client is used and how RatBridge logs in.
+                
+                # Master switch. Set to false to keep the mod installed but stop all bridge activity.
+                """
+                + "enabled = " + boolString(values, "enabled", true) + "\n"
+                + "\n"
+                + "# External client to sync with. Currently supported: \"discord\".\n"
                 + "client = " + quote(string(values, "client", "discord")) + "\n"
+                + "\n"
+                + "# Discord connection mode.\n"
+                + "# \"bot\" uses a normal Discord bot token and needs serverId + channelId.\n"
+                + "# \"selfbot\" uses a normal user account token for DM/Group DM channel polling.\n"
+                + "# Discord forbids selfbots; using selfbot mode can get that Discord account banned.\n"
                 + "mode = " + quote(string(values, "mode", "bot")) + "\n"
                 + "\n"
+                + "# Discord token. You can paste the token here, but using tokenEnv is safer.\n"
+                + "# Bot mode: use your Discord bot token.\n"
+                + "# Selfbot mode: use the user account token only if you understand the ban risk.\n"
+                + "# If token is empty, RatBridge will read the environment variable named by tokenEnv.\n"
                 + "token = " + quote(string(values, "token", "")) + "\n"
+                + "\n"
+                + "# Name of the environment variable that stores the Discord token.\n"
+                + "# Example on Linux: export RATBRIDGE_DISCORD_TOKEN=\"your-token-here\"\n"
+                + "# Leave token empty above to use this.\n"
                 + "tokenEnv = " + quote(string(values, "tokenEnv", "RATBRIDGE_DISCORD_TOKEN")) + "\n"
                 + "\n"
+                + "# Discord server/guild ID. Required only in bot mode.\n"
+                + "# Enable Discord developer mode, right-click the server, then Copy Server ID.\n"
                 + "serverId = " + quote(string(values, "serverId", "")) + "\n"
+                + "\n"
+                + "# Discord channel ID to read/write messages.\n"
+                + "# Bot mode: a text channel in the configured server.\n"
+                + "# Selfbot mode: a DM or Group DM channel ID.\n"
+                + "# Enable Discord developer mode, right-click the channel, then Copy Channel ID.\n"
                 + "channelId = " + quote(string(values, "channelId", "")) + "\n"
                 + "\n"
+                + "# Extra selfbot safety gate. Selfbot mode will not start unless this is true.\n"
+                + "# Keep false unless mode = \"selfbot\" and you accept the account ban risk.\n"
                 + "enableSelfbot = " + boolString(values, "enableSelfbot", false) + "\n"
+                + "\n"
+                + "# Selfbot polling interval in milliseconds for DM/Group DM reads.\n"
+                + "# Lower values reduce delay but can hit Discord rate limits faster. Minimum: 500.\n"
                 + "selfbotPollIntervalMillis = " + integer(values, "selfbotPollIntervalMillis", 750) + "\n";
     }
 
     private static String defaultMessagesToml(Map<String, String> values) {
         return """
-                # Listener toggles
+                # RatBridge message settings.
+                # This file controls which events are synced and what text RatBridge sends.
+                
+                # Listener toggles.
+                # Set a value to false to stop syncing that specific message/event type.
+                # syncChat controls both Minecraft -> Discord player chat and Discord -> Minecraft messages.
+                # More directional chat toggles are planned separately.
                 """
                 + "syncChat = " + boolString(values, "syncChat", true) + "\n"
                 + "syncPlayerJoin = " + boolString(values, "syncPlayerJoin", true) + "\n"
@@ -134,13 +173,25 @@ public final class BridgeConfigFile {
                 + "syncServerStart = " + boolString(values, "syncServerStart", true) + "\n"
                 + "syncServerStop = " + boolString(values, "syncServerStop", true) + "\n"
                 + "\n"
-                + "# Message formats. Available placeholders depend on each message.\n"
+                + "# Message formats.\n"
+                + "# minecraftToDiscordFormat is used for Minecraft player chat sent to Discord.\n"
+                + "# Available placeholders: {player}, {message}\n"
                 + "minecraftToDiscordFormat = " + quote(string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}")) + "\n"
+                + "\n"
+                + "# discordToMinecraftFormat is used for Discord messages shown in Minecraft.\n"
+                + "# Available placeholders: {author}, {message}\n"
                 + "discordToMinecraftFormat = " + quote(string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}")) + "\n"
+                + "\n"
+                + "# eventFormat wraps server lifecycle and player join/leave messages before sending to Discord.\n"
+                + "# Available placeholders: {message}\n"
                 + "eventFormat = " + quote(string(values, "eventFormat", "[MC] {message}")) + "\n"
                 + "\n"
+                + "# Event message text before eventFormat is applied.\n"
+                + "# playerJoinMessage and playerLeaveMessage support: {player}\n"
                 + "playerJoinMessage = " + quote(string(values, "playerJoinMessage", "{player} joined the game")) + "\n"
                 + "playerLeaveMessage = " + quote(string(values, "playerLeaveMessage", "{player} left the game")) + "\n"
+                + "\n"
+                + "# Server lifecycle messages. No placeholders yet.\n"
                 + "serverStartMessage = " + quote(string(values, "serverStartMessage", "Server started")) + "\n"
                 + "serverStopMessage = " + quote(string(values, "serverStopMessage", "Server stopping")) + "\n";
     }

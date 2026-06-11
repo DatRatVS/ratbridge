@@ -73,35 +73,59 @@ config/ratbridge/messages.toml
 `config.toml` holds connection/client settings:
 
 ```toml
+# Master switch. Set false to keep the mod installed but disable bridge activity.
 enabled = true
+
+# External client. Currently supported: "discord".
 client = "discord"
+
+# Discord mode: "bot" for a normal Discord bot, "selfbot" for DM/Group DM polling.
+# Selfbot mode can get the Discord account banned.
 mode = "bot"
 
+# Paste a token here, or leave empty and use tokenEnv.
 token = ""
+
+# Environment variable name used when token is empty.
 tokenEnv = "RATBRIDGE_DISCORD_TOKEN"
 
+# Required in bot mode. Copy it from Discord developer mode.
 serverId = ""
+
+# Required in bot and selfbot mode. Bot mode uses a server text channel; selfbot uses DM/Group DM channel IDs.
 channelId = ""
 
+# Required safety gate for selfbot mode.
 enableSelfbot = false
+
+# Selfbot polling delay in milliseconds. Minimum: 500.
 selfbotPollIntervalMillis = 750
 ```
 
 `messages.toml` holds listener toggles and editable message text:
 
 ```toml
+# Toggles for each synced listener/event type.
 syncChat = true
 syncPlayerJoin = true
 syncPlayerLeave = true
 syncServerStart = true
 syncServerStop = true
 
+# Minecraft -> Discord chat. Placeholders: {player}, {message}
 minecraftToDiscordFormat = "[MC] <{player}> {message}"
+
+# Discord -> Minecraft chat. Placeholders: {author}, {message}
 discordToMinecraftFormat = "[Discord] <{author}> {message}"
+
+# Wrapper for event messages. Placeholder: {message}
 eventFormat = "[MC] {message}"
 
+# Join/leave event text. Placeholder: {player}
 playerJoinMessage = "{player} joined the game"
 playerLeaveMessage = "{player} left the game"
+
+# Server lifecycle event text.
 serverStartMessage = "Server started"
 serverStopMessage = "Server stopping"
 ```
