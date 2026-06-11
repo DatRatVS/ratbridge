@@ -36,7 +36,7 @@ A - Webhook delivery: ✅
     (A3 - Webhook delivery just applies to messages, so death, leave, join or else are handled with normal messaging.)
     (A4 - STRICTLY PROHIBITED to be used with selfbot mode. FEATURE EXCLUSIVE TO DISCORD NORMAL BOT MODE.)
 
-B - More events to listen:
+B - More events to listen: ✅
     . Deaths
     . Advancements/achievenments
 

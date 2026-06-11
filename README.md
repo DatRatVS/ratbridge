@@ -33,7 +33,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 - **Multi-Loader Targets**: Builds for Forge `1.20.1`, Fabric `1.20.1`, and NeoForge `1.20.2`.
 - **Minecraft to Discord Chat**: Sends player chat messages from Minecraft to a configured Discord channel.
 - **Discord to Minecraft Chat**: Broadcasts Discord messages back into Minecraft as server system messages.
-- **Player Event Sync**: Sends player join and leave events to Discord.
+- **Player Event Sync**: Sends player join, leave, death, and advancement events to Discord.
 - **Server Lifecycle Sync**: Sends server start and shutdown messages to Discord.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
 - **Selfbot Mode**: Optional DM and Group DM polling mode using a user token and channel id.
@@ -117,6 +117,8 @@ webhookName = "RatBridge"
 syncChat = true
 syncPlayerJoin = true
 syncPlayerLeave = true
+syncPlayerDeath = true
+syncPlayerAdvancement = true
 syncServerStart = true
 syncServerStop = true
 
@@ -132,6 +134,12 @@ eventFormat = "[MC] {message}"
 # Join/leave event text. Placeholder: {player}
 playerJoinMessage = "{player} joined the game"
 playerLeaveMessage = "{player} left the game"
+
+# Death event text. Placeholders: {player}, {message}
+playerDeathMessage = "{message}"
+
+# Advancement event text. Placeholders: {player}, {advancement}, {description}
+playerAdvancementMessage = "{player} has made the advancement [{advancement}]"
 
 # Server lifecycle event text.
 serverStartMessage = "Server started"
@@ -203,9 +211,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.3.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.3.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.3.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.4.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.4.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.4.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

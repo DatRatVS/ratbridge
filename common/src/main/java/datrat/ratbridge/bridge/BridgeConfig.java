@@ -19,6 +19,8 @@ public record BridgeConfig(
         boolean syncChat,
         boolean syncPlayerJoin,
         boolean syncPlayerLeave,
+        boolean syncPlayerDeath,
+        boolean syncPlayerAdvancement,
         boolean syncServerStart,
         boolean syncServerStop,
         int selfbotPollIntervalMillis,
@@ -27,6 +29,8 @@ public record BridgeConfig(
         String eventFormat,
         String playerJoinMessage,
         String playerLeaveMessage,
+        String playerDeathMessage,
+        String playerAdvancementMessage,
         String serverStartMessage,
         String serverStopMessage
 ) {

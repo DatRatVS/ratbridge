@@ -7,12 +7,16 @@ import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
 import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
@@ -100,6 +104,31 @@ public final class ForgeServerEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             bridge.onPlayerLeft(player.getGameProfile().getName());
         }
+    }
+
+    @SubscribeEvent
+    public void onLivingDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            String deathMessage = event.getSource().getLocalizedDeathMessage(player).getString();
+            bridge.onPlayerDied(player.getGameProfile().getName(), deathMessage);
+        }
+    }
+
+    @SubscribeEvent
+    public void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        Advancement advancement = event.getAdvancement();
+        DisplayInfo display = advancement.getDisplay();
+        if (display == null || !display.shouldAnnounceChat()) {
+            return;
+        }
+        bridge.onPlayerAdvancement(
+                player.getGameProfile().getName(),
+                display.getTitle().getString(),
+                display.getDescription().getString()
+        );
     }
 
     private int reloadBridge(CommandSourceStack source) {

@@ -71,6 +71,29 @@ public final class BridgeController {
         sendEvent(MessageFormatter.format(current.playerLeaveMessage(), Map.of("player", player)));
     }
 
+    public void onPlayerDied(String player, String deathMessage) {
+        BridgeConfig current = config;
+        if (!isRunning() || current == null || !current.syncPlayerDeath()) {
+            return;
+        }
+        sendEvent(MessageFormatter.format(current.playerDeathMessage(), Map.of(
+                "player", player,
+                "message", deathMessage
+        )));
+    }
+
+    public void onPlayerAdvancement(String player, String advancement, String description) {
+        BridgeConfig current = config;
+        if (!isRunning() || current == null || !current.syncPlayerAdvancement()) {
+            return;
+        }
+        sendEvent(MessageFormatter.format(current.playerAdvancementMessage(), Map.of(
+                "player", player,
+                "advancement", advancement,
+                "description", description
+        )));
+    }
+
     public void onServerStarted() {
         BridgeConfig current = config;
         if (!isRunning() || current == null || !current.syncServerStart()) {

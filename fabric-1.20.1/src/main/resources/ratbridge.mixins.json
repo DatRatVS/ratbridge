@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "datrat.ratbridge.platform.fabric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "PlayerAdvancementsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

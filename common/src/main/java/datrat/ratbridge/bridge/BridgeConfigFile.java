@@ -77,6 +77,8 @@ public final class BridgeConfigFile {
                 bool(values, "syncChat", true),
                 bool(values, "syncPlayerJoin", true),
                 bool(values, "syncPlayerLeave", true),
+                bool(values, "syncPlayerDeath", true),
+                bool(values, "syncPlayerAdvancement", true),
                 bool(values, "syncServerStart", true),
                 bool(values, "syncServerStop", true),
                 integer(values, "selfbotPollIntervalMillis", 750),
@@ -85,6 +87,8 @@ public final class BridgeConfigFile {
                 string(values, "eventFormat", "[MC] {message}"),
                 string(values, "playerJoinMessage", "{player} joined the game"),
                 string(values, "playerLeaveMessage", "{player} left the game"),
+                string(values, "playerDeathMessage", "{message}"),
+                string(values, "playerAdvancementMessage", "{player} has made the advancement [{advancement}]"),
                 string(values, "serverStartMessage", "Server started"),
                 string(values, "serverStopMessage", "Server stopping")
         );
@@ -182,6 +186,8 @@ public final class BridgeConfigFile {
                 + "syncChat = " + boolString(values, "syncChat", true) + "\n"
                 + "syncPlayerJoin = " + boolString(values, "syncPlayerJoin", true) + "\n"
                 + "syncPlayerLeave = " + boolString(values, "syncPlayerLeave", true) + "\n"
+                + "syncPlayerDeath = " + boolString(values, "syncPlayerDeath", true) + "\n"
+                + "syncPlayerAdvancement = " + boolString(values, "syncPlayerAdvancement", true) + "\n"
                 + "syncServerStart = " + boolString(values, "syncServerStart", true) + "\n"
                 + "syncServerStop = " + boolString(values, "syncServerStop", true) + "\n"
                 + "\n"
@@ -202,6 +208,13 @@ public final class BridgeConfigFile {
                 + "# playerJoinMessage and playerLeaveMessage support: {player}\n"
                 + "playerJoinMessage = " + quote(string(values, "playerJoinMessage", "{player} joined the game")) + "\n"
                 + "playerLeaveMessage = " + quote(string(values, "playerLeaveMessage", "{player} left the game")) + "\n"
+                + "\n"
+                + "# Death event text. Available placeholders: {player}, {message}\n"
+                + "# {message} is Minecraft's localized vanilla death message, for example: Steve fell from a high place.\n"
+                + "playerDeathMessage = " + quote(string(values, "playerDeathMessage", "{message}")) + "\n"
+                + "\n"
+                + "# Advancement event text. Available placeholders: {player}, {advancement}, {description}\n"
+                + "playerAdvancementMessage = " + quote(string(values, "playerAdvancementMessage", "{player} has made the advancement [{advancement}]")) + "\n"
                 + "\n"
                 + "# Server lifecycle messages. No placeholders yet.\n"
                 + "serverStartMessage = " + quote(string(values, "serverStartMessage", "Server started")) + "\n"

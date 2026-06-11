@@ -27,6 +27,10 @@ final class BridgeConfigFileTest {
         assertEquals(750, loaded.selfbotPollIntervalMillis());
         assertEquals(false, loaded.webhookDelivery());
         assertEquals("RatBridge", loaded.webhookName());
+        assertEquals(true, loaded.syncPlayerDeath());
+        assertEquals(true, loaded.syncPlayerAdvancement());
+        assertEquals("{message}", loaded.playerDeathMessage());
+        assertEquals("{player} has made the advancement [{advancement}]", loaded.playerAdvancementMessage());
         assertEquals("Server stopping", loaded.serverStopMessage());
     }
 
@@ -49,6 +53,9 @@ final class BridgeConfigFileTest {
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
                 playerJoinMessage = "{player} entrou no jogo"
+                syncPlayerDeath = false
+                playerDeathMessage = "{message}"
+                playerAdvancementMessage = "{player}: {advancement} - {description}"
                 """);
 
         BridgeConfig loaded = BridgeConfigFile.loadSplit(configDir);
@@ -60,6 +67,8 @@ final class BridgeConfigFileTest {
         assertEquals("RatBridge Chat", loaded.webhookName());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals("{player} entrou no jogo", loaded.playerJoinMessage());
+        assertEquals(false, loaded.syncPlayerDeath());
+        assertEquals("{player}: {advancement} - {description}", loaded.playerAdvancementMessage());
     }
 
     @Test
@@ -73,7 +82,11 @@ final class BridgeConfigFileTest {
                 webhookDelivery = true
                 webhookName = "Legacy Webhook"
                 syncPlayerJoin = false
+                syncPlayerDeath = false
+                syncPlayerAdvancement = false
                 playerJoinMessage = "{player} chegou"
+                playerDeathMessage = "{message}"
+                playerAdvancementMessage = "{player} desbloqueou {advancement}"
                 """);
 
         BridgeConfig loaded = BridgeConfigFile.loadSplit(tempDir.resolve("ratbridge"));
@@ -83,9 +96,13 @@ final class BridgeConfigFileTest {
         assertEquals(false, loaded.syncPlayerJoin());
         assertEquals(true, loaded.webhookDelivery());
         assertEquals("Legacy Webhook", loaded.webhookName());
+        assertEquals(false, loaded.syncPlayerDeath());
+        assertEquals(false, loaded.syncPlayerAdvancement());
         assertEquals("{player} chegou", loaded.playerJoinMessage());
+        assertEquals("{player} desbloqueou {advancement}", loaded.playerAdvancementMessage());
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("mode = \"selfbot\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("webhookDelivery = true"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerJoin = false"));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerAdvancement = false"));
     }
 }

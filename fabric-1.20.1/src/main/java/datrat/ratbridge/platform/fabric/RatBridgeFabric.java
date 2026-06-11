@@ -8,14 +8,18 @@ import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +32,8 @@ public final class RatBridgeFabric implements ModInitializer {
     public static final String MOD_ID = "ratbridge";
     public static final Logger LOGGER = LoggerFactory.getLogger("RatBridge");
 
+    private static RatBridgeFabric instance;
+
     private final BridgeController bridge = new BridgeController();
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicBoolean serverAvailable = new AtomicBoolean(false);
@@ -39,6 +45,7 @@ public final class RatBridgeFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        instance = this;
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) ->
@@ -47,7 +54,29 @@ public final class RatBridgeFabric implements ModInitializer {
                 bridge.onPlayerJoined(handler.player.getGameProfile().getName()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 bridge.onPlayerLeft(handler.player.getGameProfile().getName()));
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
+            if (entity instanceof ServerPlayer player) {
+                String deathMessage = damageSource.getLocalizedDeathMessage(player).getString();
+                bridge.onPlayerDied(player.getGameProfile().getName(), deathMessage);
+            }
+        });
         CommandRegistrationCallback.EVENT.register((dispatcher, context, selection) -> registerCommands(dispatcher));
+    }
+
+    public static void onAdvancementEarned(ServerPlayer player, Advancement advancement) {
+        RatBridgeFabric current = instance;
+        if (current == null) {
+            return;
+        }
+        DisplayInfo display = advancement.getDisplay();
+        if (display == null || !display.shouldAnnounceChat()) {
+            return;
+        }
+        current.bridge.onPlayerAdvancement(
+                player.getGameProfile().getName(),
+                display.getTitle().getString(),
+                display.getDescription().getString()
+        );
     }
 
     private void onServerStarted(MinecraftServer server) {

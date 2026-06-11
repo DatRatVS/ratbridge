@@ -16,11 +16,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
+import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -102,6 +106,26 @@ public final class NeoForgeServerEvents {
         }
     }
 
+    @SubscribeEvent
+    public void onLivingDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            String deathMessage = event.getSource().getLocalizedDeathMessage(player).getString();
+            bridge.onPlayerDied(player.getGameProfile().getName(), deathMessage);
+        }
+    }
+
+    @SubscribeEvent
+    public void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        AdvancementDisplay display = readAdvancementDisplay(event);
+        if (display == null) {
+            return;
+        }
+        bridge.onPlayerAdvancement(player.getGameProfile().getName(), display.title(), display.description());
+    }
+
     private int reloadBridge(CommandSourceStack source) {
         if (!reloadInProgress.compareAndSet(false, true)) {
             source.sendFailure(Component.literal("RatBridge reload is already running."));
@@ -163,5 +187,67 @@ public final class NeoForgeServerEvents {
     private BridgeConfig loadConfig() throws Exception {
         Path configDirectory = FMLPaths.CONFIGDIR.get().resolve("ratbridge");
         return BridgeConfigFile.loadSplit(configDirectory);
+    }
+
+    private static AdvancementDisplay readAdvancementDisplay(Object event) {
+        try {
+            Object advancementHolder = invoke(event, "getAdvancement");
+            Object advancement = invokeIfPresent(advancementHolder, "value");
+            if (advancement == null) {
+                advancement = advancementHolder;
+            }
+
+            Object display = invokeIfPresent(advancement, "display");
+            if (display instanceof Optional<?> optional) {
+                if (optional.isEmpty()) {
+                    return null;
+                }
+                display = optional.get();
+            }
+            if (display == null) {
+                display = invokeIfPresent(advancement, "getDisplay");
+            }
+            if (display == null) {
+                return null;
+            }
+
+            Object announce = invokeIfPresent(display, "shouldAnnounceChat");
+            if (announce instanceof Boolean shouldAnnounce && !shouldAnnounce) {
+                return null;
+            }
+
+            Object title = firstPresent(display, "getTitle", "title");
+            Object description = firstPresent(display, "getDescription", "description");
+            return new AdvancementDisplay(componentString(title), componentString(description));
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            RatBridgeNeoForge.LOGGER.warn("Unable to read NeoForge advancement event", error);
+            return null;
+        }
+    }
+
+    private static Object firstPresent(Object target, String firstMethod, String secondMethod) throws ReflectiveOperationException {
+        Object value = invokeIfPresent(target, firstMethod);
+        return value == null ? invoke(target, secondMethod) : value;
+    }
+
+    private static Object invoke(Object target, String methodName) throws ReflectiveOperationException {
+        Method method = target.getClass().getMethod(methodName);
+        return method.invoke(target);
+    }
+
+    private static Object invokeIfPresent(Object target, String methodName) throws ReflectiveOperationException {
+        try {
+            return invoke(target, methodName);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
+    }
+
+    private static String componentString(Object component) throws ReflectiveOperationException {
+        Object value = invoke(component, "getString");
+        return value instanceof String string ? string : "";
+    }
+
+    private record AdvancementDisplay(String title, String description) {
     }
 }
