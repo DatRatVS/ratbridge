@@ -5,6 +5,7 @@ import datrat.ratbridge.RatBridge;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
+import datrat.ratbridge.bridge.TpsMonitor;
 import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
 import net.minecraft.advancements.Advancement;
@@ -15,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class ForgeServerEvents {
     private final BridgeController bridge = new BridgeController();
+    private final TpsMonitor tpsMonitor = new TpsMonitor();
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicBoolean serverAvailable = new AtomicBoolean(false);
     private final ExecutorService reloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
@@ -62,7 +65,12 @@ public final class ForgeServerEvents {
         }
 
         try {
-            bridge.start(config, new MinecraftServerMessageSink(event.getServer()), () -> DiscordClientFactory.create(config));
+            bridge.start(
+                    config,
+                    new MinecraftServerMessageSink(event.getServer()),
+                    new ForgeServerStatusProvider(event.getServer(), tpsMonitor),
+                    () -> DiscordClientFactory.create(config)
+            );
             bridge.onServerStarted();
             RatBridge.LOGGER.info("RatBridge started with client={} mode={}", config.client(), config.mode());
         } catch (Exception error) {
@@ -90,6 +98,13 @@ public final class ForgeServerEvents {
     @SubscribeEvent
     public void onServerChat(ServerChatEvent event) {
         bridge.onMinecraftChat(event.getUsername(), event.getRawText());
+    }
+
+    @SubscribeEvent
+    public void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            tpsMonitor.recordTick();
+        }
     }
 
     @SubscribeEvent
@@ -171,7 +186,12 @@ public final class ForgeServerEvents {
                 if (!serverAvailable.get()) {
                     return;
                 }
-                bridge.start(config, new MinecraftServerMessageSink(server), () -> DiscordClientFactory.create(config));
+                bridge.start(
+                        config,
+                        new MinecraftServerMessageSink(server),
+                        new ForgeServerStatusProvider(server, tpsMonitor),
+                        () -> DiscordClientFactory.create(config)
+                );
                 if (!serverAvailable.get()) {
                     bridge.stop();
                     return;

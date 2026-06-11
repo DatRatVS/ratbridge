@@ -3,6 +3,7 @@ package datrat.ratbridge.bridge;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +77,34 @@ final class BridgeControllerTest {
         assertNull(sink.message);
     }
 
+    @Test
+    void topicUpdaterFormatsStatusOnStartAndShutdown() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        BridgeConfig config = topicConfig();
+        ServerStatusProvider statusProvider = uptimeMillis -> new ServerStatusSnapshot(
+                3,
+                20,
+                11,
+                "Rat SMP",
+                "Forge-1.20.1",
+                19.87,
+                125_000L
+        );
+
+        controller.start(config, message -> { }, statusProvider, () -> client);
+
+        assertEquals("topic-channel", client.topicChannelId.get(1, TimeUnit.SECONDS));
+        assertEquals("3/20 online | TPS 19.87 | Rat SMP | up 2m", client.topic.get(1, TimeUnit.SECONDS));
+
+        client.resetTopicFutures();
+        controller.onServerStopping();
+
+        assertEquals("topic-channel", client.topicChannelId.get(1, TimeUnit.SECONDS));
+        assertEquals("Offline after 2m with 3 players cached", client.topic.get(1, TimeUnit.SECONDS));
+        controller.stop();
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
         return config(webhookDelivery, true, true);
     }
@@ -83,7 +112,19 @@ final class BridgeControllerTest {
     private static BridgeConfig config(boolean webhookDelivery, boolean syncMinecraftToDiscordChat, boolean syncDiscordToMinecraftChat) {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 webhookDelivery, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
+                true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static BridgeConfig topicConfig() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                true, "topic-channel", "%playercount%/%playermax% online | TPS %tps% | %motd% | up %uptimemins%m", "Offline after %uptimemins%m with %playercount% players cached", 10,
+                true, true, true,
                 true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -95,6 +136,8 @@ final class BridgeControllerTest {
         private String webhookPlayer;
         private String webhookMessage;
         private Consumer<DiscordInboundMessage> inboundConsumer;
+        private CompletableFuture<String> topicChannelId = new CompletableFuture<>();
+        private CompletableFuture<String> topic = new CompletableFuture<>();
 
         @Override
         public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) {
@@ -116,6 +159,18 @@ final class BridgeControllerTest {
             webhookPlayer = player;
             webhookMessage = message;
             return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> updateChannelTopic(String channelId, String topic) {
+            this.topicChannelId.complete(channelId);
+            this.topic.complete(topic);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        private void resetTopicFutures() {
+            topicChannelId = new CompletableFuture<>();
+            topic = new CompletableFuture<>();
         }
 
         @Override

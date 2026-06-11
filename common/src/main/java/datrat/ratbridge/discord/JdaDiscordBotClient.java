@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.WebhookClient;
 import net.dv8tion.jda.api.entities.WebhookType;
 import net.dv8tion.jda.api.entities.channel.attribute.IWebhookContainer;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -97,6 +98,33 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<Void> updateChannelTopic(String channelId, String topic) {
+        if (jda == null || !BridgeConfig.hasText(channelId)) {
+            return CompletableFuture.completedFuture(null);
+        }
+        StandardGuildMessageChannel channel = jda.getChannelById(StandardGuildMessageChannel.class, channelId);
+        if (channel == null) {
+            LOGGER.warn("Discord topic channel not found or does not support topics: {}", channelId);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        String boundedTopic = boundedTopic(topic);
+        if (boundedTopic.equals(channel.getTopic())) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        channel.getManager().setTopic(boundedTopic).queue(
+                ignored -> future.complete(null),
+                error -> {
+                    LOGGER.warn("Failed to update Discord channel topic", error);
+                    future.complete(null);
+                }
+        );
+        return future;
+    }
+
+    @Override
     public void close() {
         if (jda != null) {
             jda.shutdown();
@@ -158,5 +186,13 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     private static String minotarHelmAvatarUrl(String player) {
         String encoded = URLEncoder.encode(webhookUsername(player), StandardCharsets.UTF_8);
         return "https://minotar.net/helm/" + encoded + ".png";
+    }
+
+    private static String boundedTopic(String topic) {
+        if (topic == null) {
+            return "";
+        }
+        int maxLength = StandardGuildMessageChannel.MAX_TOPIC_LENGTH;
+        return topic.length() <= maxLength ? topic : topic.substring(0, maxLength);
     }
 }

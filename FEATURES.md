@@ -47,7 +47,7 @@ C - Toggles: ✅
     [I think to those toggles above like, ah i want to just see the minecraft chat but not that
      the minecraft chat can see the discord chat.]
 
-D - Channel topic changer/writer
+D - Channel topic changer/writer: ✅
     . Writes information to the discord channel topic:
     ```
     Available placeholders:

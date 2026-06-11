@@ -16,6 +16,11 @@ public record BridgeConfig(
         boolean enableSelfbot,
         boolean webhookDelivery,
         String webhookName,
+        boolean topicUpdaterEnabled,
+        String topicUpdaterChannelId,
+        String topicUpdaterMessage,
+        String topicUpdaterShutdownMessage,
+        int topicUpdaterIntervalMinutes,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
         boolean syncDiscordToMinecraftChat,
@@ -97,6 +102,22 @@ public record BridgeConfig(
             errors.add("webhookName is required when webhookDelivery is true");
         }
 
+        if (topicUpdaterEnabled && !"bot".equals(resolvedMode)) {
+            errors.add("topicUpdaterEnabled requires mode = 'bot'; Discord channel topics cannot be managed by selfbot mode");
+        }
+
+        if (topicUpdaterEnabled && !hasText(resolvedTopicUpdaterChannelId())) {
+            errors.add("topicUpdaterChannelId or channelId is required when topicUpdaterEnabled is true");
+        }
+
+        if (topicUpdaterEnabled && !hasText(topicUpdaterMessage)) {
+            errors.add("topicUpdaterMessage is required when topicUpdaterEnabled is true");
+        }
+
+        if (topicUpdaterEnabled && topicUpdaterIntervalMinutes < 10) {
+            errors.add("topicUpdaterIntervalMinutes must be at least 10 to respect Discord rate limits");
+        }
+
         if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {
             errors.add("selfbotPollIntervalMillis must be at least 500");
         }
@@ -106,6 +127,10 @@ public record BridgeConfig(
 
     public static boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    public String resolvedTopicUpdaterChannelId() {
+        return hasText(topicUpdaterChannelId) ? topicUpdaterChannelId.trim() : channelId;
     }
 
     private static String normalize(String value) {

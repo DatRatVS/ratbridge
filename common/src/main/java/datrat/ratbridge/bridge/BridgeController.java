@@ -3,6 +3,9 @@ package datrat.ratbridge.bridge;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -11,24 +14,42 @@ public final class BridgeController {
     private DiscordBridgeClient client;
     private BridgeConfig config;
     private MinecraftMessageSink minecraftSink;
+    private ServerStatusProvider statusProvider = ServerStatusProvider.empty();
+    private ScheduledExecutorService topicUpdater;
+    private long startedAtMillis;
 
     public synchronized void start(BridgeConfig config, MinecraftMessageSink minecraftSink, Supplier<DiscordBridgeClient> clientFactory) throws Exception {
+        start(config, minecraftSink, ServerStatusProvider.empty(), clientFactory);
+    }
+
+    public synchronized void start(
+            BridgeConfig config,
+            MinecraftMessageSink minecraftSink,
+            ServerStatusProvider statusProvider,
+            Supplier<DiscordBridgeClient> clientFactory
+    ) throws Exception {
         stop();
         this.config = Objects.requireNonNull(config);
         this.minecraftSink = Objects.requireNonNull(minecraftSink);
+        this.statusProvider = Objects.requireNonNull(statusProvider);
         this.client = Objects.requireNonNull(clientFactory.get());
         this.client.start(config, this::onDiscordMessage);
+        this.startedAtMillis = System.currentTimeMillis();
         running.set(true);
+        startTopicUpdater();
     }
 
     public synchronized void stop() {
         running.set(false);
+        stopTopicUpdater();
         if (client != null) {
             client.close();
             client = null;
         }
         minecraftSink = null;
         config = null;
+        statusProvider = ServerStatusProvider.empty();
+        startedAtMillis = 0L;
     }
 
     public boolean isRunning() {
@@ -105,11 +126,14 @@ public final class BridgeController {
     public void onServerStopping() {
         BridgeConfig current = config;
         DiscordBridgeClient currentClient = client;
-        if (!isRunning() || current == null || currentClient == null || !current.syncServerStop()) {
+        if (!isRunning() || current == null || currentClient == null) {
             return;
         }
-        String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", current.serverStopMessage()));
-        currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
+        if (current.syncServerStop()) {
+            String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", current.serverStopMessage()));
+            currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
+        }
+        updateShutdownTopic(current, currentClient);
     }
 
     private void sendEvent(String eventMessage) {
@@ -139,5 +163,58 @@ public final class BridgeController {
                 "message", inbound.content()
         ));
         sink.sendSystemMessage(formatted);
+    }
+
+    private synchronized void startTopicUpdater() {
+        BridgeConfig current = config;
+        if (current == null || !current.topicUpdaterEnabled()) {
+            return;
+        }
+        topicUpdater = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "RatBridge-Topic-Updater");
+            thread.setDaemon(true);
+            return thread;
+        });
+        long intervalMinutes = Math.max(10, current.topicUpdaterIntervalMinutes());
+        topicUpdater.scheduleWithFixedDelay(this::updateTopicSafely, 0L, intervalMinutes, TimeUnit.MINUTES);
+    }
+
+    private synchronized void stopTopicUpdater() {
+        if (topicUpdater != null) {
+            topicUpdater.shutdownNow();
+            topicUpdater = null;
+        }
+    }
+
+    private void updateTopicSafely() {
+        try {
+            BridgeConfig current = config;
+            DiscordBridgeClient currentClient = client;
+            if (!isRunning() || current == null || currentClient == null || !current.topicUpdaterEnabled()) {
+                return;
+            }
+            currentClient.updateChannelTopic(
+                    current.resolvedTopicUpdaterChannelId(),
+                    buildTopic(current.topicUpdaterMessage())
+            );
+        } catch (Exception ignored) {
+            // Discord client implementations log REST failures; the scheduler must keep running.
+        }
+    }
+
+    private void updateShutdownTopic(BridgeConfig current, DiscordBridgeClient currentClient) {
+        if (!current.topicUpdaterEnabled() || !BridgeConfig.hasText(current.topicUpdaterShutdownMessage())) {
+            return;
+        }
+        currentClient.updateChannelTopicBlocking(
+                current.resolvedTopicUpdaterChannelId(),
+                buildTopic(current.topicUpdaterShutdownMessage()),
+                Duration.ofSeconds(5)
+        );
+    }
+
+    private String buildTopic(String template) {
+        long uptimeMillis = startedAtMillis == 0L ? 0L : Math.max(0L, System.currentTimeMillis() - startedAtMillis);
+        return TopicTemplateFormatter.format(template, statusProvider.snapshot(uptimeMillis));
     }
 }

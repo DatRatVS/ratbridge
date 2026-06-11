@@ -34,6 +34,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 - **Directional Chat Sync**: Separately toggles Minecraft -> Discord and Discord -> Minecraft chat sync.
 - **Player Event Sync**: Sends player join, leave, death, and advancement events to Discord.
 - **Server Lifecycle Sync**: Sends server start and shutdown messages to Discord.
+- **Channel Topic Updater**: Updates a Discord channel topic with server status placeholders.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
 - **Selfbot Mode**: Optional DM and Group DM polling mode using a user token and channel id.
 - **Runtime Reload**: Adds `/ratbridge reload` for OPs to reload config and reconnect Discord without restarting the server.
@@ -107,6 +108,23 @@ webhookDelivery = false
 
 # Webhook name RatBridge creates/reuses in the Discord channel.
 webhookName = "RatBridge"
+
+# Discord channel topic updater. Bot mode only; requires Manage Channels permission.
+topicUpdaterEnabled = false
+
+# Leave empty to update the same Discord channel used by channelId.
+topicUpdaterChannelId = ""
+
+# Online topic text. Available placeholders include:
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
+topicUpdaterMessage = "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"
+
+# Topic applied when the server shuts down.
+topicUpdaterShutdownMessage = "Server is offline"
+
+# Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.
+topicUpdaterIntervalMinutes = 10
 ```
 
 `messages.toml` holds listener toggles and editable message text:

@@ -4,12 +4,14 @@ import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
+import datrat.ratbridge.bridge.TpsMonitor;
 import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -35,6 +37,7 @@ public final class RatBridgeFabric implements ModInitializer {
     private static RatBridgeFabric instance;
 
     private final BridgeController bridge = new BridgeController();
+    private final TpsMonitor tpsMonitor = new TpsMonitor();
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicBoolean serverAvailable = new AtomicBoolean(false);
     private final ExecutorService reloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
@@ -48,6 +51,7 @@ public final class RatBridgeFabric implements ModInitializer {
         instance = this;
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
+        ServerTickEvents.END_SERVER_TICK.register(server -> tpsMonitor.recordTick());
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) ->
                 bridge.onMinecraftChat(sender.getGameProfile().getName(), message.signedContent()));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
@@ -145,7 +149,12 @@ public final class RatBridgeFabric implements ModInitializer {
                 if (!serverAvailable.get()) {
                     return;
                 }
-                bridge.start(config, new FabricMinecraftMessageSink(server), () -> DiscordClientFactory.create(config));
+                bridge.start(
+                        config,
+                        new FabricMinecraftMessageSink(server),
+                        new FabricServerStatusProvider(server, tpsMonitor),
+                        () -> DiscordClientFactory.create(config)
+                );
                 if (!serverAvailable.get()) {
                     bridge.stop();
                     return;
@@ -176,7 +185,12 @@ public final class RatBridgeFabric implements ModInitializer {
         }
 
         try {
-            bridge.start(config, new FabricMinecraftMessageSink(server), () -> DiscordClientFactory.create(config));
+            bridge.start(
+                    config,
+                    new FabricMinecraftMessageSink(server),
+                    new FabricServerStatusProvider(server, tpsMonitor),
+                    () -> DiscordClientFactory.create(config)
+            );
             if (!reloaded) {
                 bridge.onServerStarted();
             }

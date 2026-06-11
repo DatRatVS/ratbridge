@@ -27,6 +27,11 @@ final class BridgeConfigFileTest {
         assertEquals(750, loaded.selfbotPollIntervalMillis());
         assertEquals(false, loaded.webhookDelivery());
         assertEquals("RatBridge", loaded.webhookName());
+        assertEquals(false, loaded.topicUpdaterEnabled());
+        assertEquals("", loaded.topicUpdaterChannelId());
+        assertEquals("Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m", loaded.topicUpdaterMessage());
+        assertEquals("Server is offline", loaded.topicUpdaterShutdownMessage());
+        assertEquals(10, loaded.topicUpdaterIntervalMinutes());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals(true, loaded.syncPlayerDeath());
@@ -51,6 +56,11 @@ final class BridgeConfigFileTest {
                 selfbotPollIntervalMillis = 500
                 webhookDelivery = true
                 webhookName = "RatBridge Chat"
+                topicUpdaterEnabled = true
+                topicUpdaterChannelId = "99"
+                topicUpdaterMessage = "%playercount% online"
+                topicUpdaterShutdownMessage = "offline"
+                topicUpdaterIntervalMinutes = 15
                 """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
@@ -69,6 +79,11 @@ final class BridgeConfigFileTest {
         assertEquals(500, loaded.selfbotPollIntervalMillis());
         assertEquals(true, loaded.webhookDelivery());
         assertEquals("RatBridge Chat", loaded.webhookName());
+        assertEquals(true, loaded.topicUpdaterEnabled());
+        assertEquals("99", loaded.topicUpdaterChannelId());
+        assertEquals("%playercount% online", loaded.topicUpdaterMessage());
+        assertEquals("offline", loaded.topicUpdaterShutdownMessage());
+        assertEquals(15, loaded.topicUpdaterIntervalMinutes());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
@@ -87,6 +102,10 @@ final class BridgeConfigFileTest {
                 enableSelfbot = true
                 webhookDelivery = true
                 webhookName = "Legacy Webhook"
+                topicUpdaterEnabled = true
+                topicUpdaterChannelId = "99"
+                topicUpdaterMessage = "%playercount% online"
+                topicUpdaterIntervalMinutes = 20
                 syncMinecraftToDiscordChat = false
                 syncDiscordToMinecraftChat = true
                 syncPlayerJoin = false
@@ -104,6 +123,10 @@ final class BridgeConfigFileTest {
         assertEquals(false, loaded.syncPlayerJoin());
         assertEquals(true, loaded.webhookDelivery());
         assertEquals("Legacy Webhook", loaded.webhookName());
+        assertEquals(true, loaded.topicUpdaterEnabled());
+        assertEquals("99", loaded.topicUpdaterChannelId());
+        assertEquals("%playercount% online", loaded.topicUpdaterMessage());
+        assertEquals(20, loaded.topicUpdaterIntervalMinutes());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals(false, loaded.syncPlayerDeath());
@@ -112,6 +135,7 @@ final class BridgeConfigFileTest {
         assertEquals("{player} desbloqueou {advancement}", loaded.playerAdvancementMessage());
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("mode = \"selfbot\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("webhookDelivery = true"));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("topicUpdaterEnabled = true"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncMinecraftToDiscordChat = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerJoin = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerAdvancement = false"));

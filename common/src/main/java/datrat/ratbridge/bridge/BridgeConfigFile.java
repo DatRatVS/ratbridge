@@ -74,6 +74,11 @@ public final class BridgeConfigFile {
                 bool(values, "enableSelfbot", false),
                 bool(values, "webhookDelivery", false),
                 string(values, "webhookName", "RatBridge"),
+                bool(values, "topicUpdaterEnabled", false),
+                string(values, "topicUpdaterChannelId", ""),
+                string(values, "topicUpdaterMessage", "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"),
+                string(values, "topicUpdaterShutdownMessage", "Server is offline"),
+                integer(values, "topicUpdaterIntervalMinutes", 10),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
                 bool(values, "syncDiscordToMinecraftChat", true),
@@ -172,7 +177,26 @@ public final class BridgeConfigFile {
                 + "webhookDelivery = " + boolString(values, "webhookDelivery", false) + "\n"
                 + "\n"
                 + "# Name of the webhook RatBridge creates/reuses in the configured Discord channel.\n"
-                + "webhookName = " + quote(string(values, "webhookName", "RatBridge")) + "\n";
+                + "webhookName = " + quote(string(values, "webhookName", "RatBridge")) + "\n"
+                + "\n"
+                + "# Discord channel topic updater. Bot mode only; selfbot mode cannot edit guild channel topics.\n"
+                + "# The bot needs permission to manage channels in the target Discord channel.\n"
+                + "topicUpdaterEnabled = " + boolString(values, "topicUpdaterEnabled", false) + "\n"
+                + "\n"
+                + "# Channel ID whose topic will be updated. Leave empty to use channelId above.\n"
+                + "topicUpdaterChannelId = " + quote(string(values, "topicUpdaterChannelId", "")) + "\n"
+                + "\n"
+                + "# Topic text while the server is online.\n"
+                + "# Placeholders: %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%\n"
+                + "# Memory placeholders in MB: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%\n"
+                + "# Memory placeholders in GB: %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%\n"
+                + "topicUpdaterMessage = " + quote(string(values, "topicUpdaterMessage", "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m")) + "\n"
+                + "\n"
+                + "# Topic text applied during server shutdown. Uses the last server snapshot placeholders.\n"
+                + "topicUpdaterShutdownMessage = " + quote(string(values, "topicUpdaterShutdownMessage", "Server is offline")) + "\n"
+                + "\n"
+                + "# Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.\n"
+                + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 10) + "\n";
     }
 
     private static String defaultMessagesToml(Map<String, String> values) {
