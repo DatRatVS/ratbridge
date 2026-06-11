@@ -25,6 +25,8 @@ final class BridgeConfigFileTest {
         assertEquals("bot", loaded.mode());
         assertEquals("RATBRIDGE_DISCORD_TOKEN", loaded.tokenEnv());
         assertEquals(750, loaded.selfbotPollIntervalMillis());
+        assertEquals(false, loaded.webhookDelivery());
+        assertEquals("RatBridge", loaded.webhookName());
         assertEquals("Server stopping", loaded.serverStopMessage());
     }
 
@@ -41,6 +43,8 @@ final class BridgeConfigFileTest {
                 channelId = "42"
                 enableSelfbot = true
                 selfbotPollIntervalMillis = 500
+                webhookDelivery = true
+                webhookName = "RatBridge Chat"
                 """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
@@ -52,6 +56,8 @@ final class BridgeConfigFileTest {
         assertEquals("selfbot", loaded.mode());
         assertEquals("42", loaded.channelId());
         assertEquals(500, loaded.selfbotPollIntervalMillis());
+        assertEquals(true, loaded.webhookDelivery());
+        assertEquals("RatBridge Chat", loaded.webhookName());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals("{player} entrou no jogo", loaded.playerJoinMessage());
     }
@@ -64,6 +70,8 @@ final class BridgeConfigFileTest {
                 token = "abc"
                 channelId = "42"
                 enableSelfbot = true
+                webhookDelivery = true
+                webhookName = "Legacy Webhook"
                 syncPlayerJoin = false
                 playerJoinMessage = "{player} chegou"
                 """);
@@ -73,8 +81,11 @@ final class BridgeConfigFileTest {
         assertEquals("selfbot", loaded.mode());
         assertEquals("42", loaded.channelId());
         assertEquals(false, loaded.syncPlayerJoin());
+        assertEquals(true, loaded.webhookDelivery());
+        assertEquals("Legacy Webhook", loaded.webhookName());
         assertEquals("{player} chegou", loaded.playerJoinMessage());
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("mode = \"selfbot\""));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("webhookDelivery = true"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerJoin = false"));
     }
 }

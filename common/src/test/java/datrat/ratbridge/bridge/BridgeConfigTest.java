@@ -52,6 +52,7 @@ final class BridgeConfigTest {
     @Test
     void selfbotPollIntervalHasMinimum() {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                false, "RatBridge",
                 true, true, true, true, true,
                 250,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -64,8 +65,24 @@ final class BridgeConfigTest {
     }
 
     @Test
+    void webhookDeliveryRequiresBotMode() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                true, "RatBridge",
+                true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("webhookDelivery requires mode = 'bot'; it is not allowed with selfbot mode"));
+    }
+
+    @Test
     void unsupportedClientAndModeAreInvalid() {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
+                false, "RatBridge",
                 true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -80,6 +97,7 @@ final class BridgeConfigTest {
 
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
+                false, "RatBridge",
                 true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",

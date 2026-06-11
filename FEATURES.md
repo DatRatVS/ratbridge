@@ -26,7 +26,7 @@ Thats it for now i guess.. we could split it more later.
 
 ### [2 - Additions]
 
-A - Webhook delivery:
+A - Webhook delivery: ✅
     . Messages are delivered as discord webhook messages
     (A1 - The webhook avatar must be the minecraft user's avatar with helm = `https://minotar.net/helm/[minecraft-name]`,
           Minotar supports .png `https://minotar.net/helm/[minecraft-name].png`

@@ -14,6 +14,8 @@ public record BridgeConfig(
         String serverId,
         String channelId,
         boolean enableSelfbot,
+        boolean webhookDelivery,
+        String webhookName,
         boolean syncChat,
         boolean syncPlayerJoin,
         boolean syncPlayerLeave,
@@ -79,6 +81,14 @@ public record BridgeConfig(
 
         if ("selfbot".equals(resolvedMode) && !enableSelfbot) {
             errors.add("selfbot mode requires enableSelfbot = true; selfbots can violate Discord terms and can get the account banned");
+        }
+
+        if (webhookDelivery && !"bot".equals(resolvedMode)) {
+            errors.add("webhookDelivery requires mode = 'bot'; it is not allowed with selfbot mode");
+        }
+
+        if (webhookDelivery && !hasText(webhookName)) {
+            errors.add("webhookName is required when webhookDelivery is true");
         }
 
         if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {

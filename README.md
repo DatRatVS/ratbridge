@@ -100,6 +100,14 @@ enableSelfbot = false
 
 # Selfbot polling delay in milliseconds. Minimum: 500.
 selfbotPollIntervalMillis = 750
+
+# Send Minecraft player chat through a Discord webhook.
+# Requires mode = "bot" and Discord Manage Webhooks permission.
+# Strictly unavailable in selfbot mode.
+webhookDelivery = false
+
+# Webhook name RatBridge creates/reuses in the Discord channel.
+webhookName = "RatBridge"
 ```
 
 `messages.toml` holds listener toggles and editable message text:
@@ -144,6 +152,14 @@ For selfbot mode:
 - `token` or `tokenEnv` is required.
 - `channelId` is required.
 - `selfbotPollIntervalMillis` controls DM/Group DM polling delay. The minimum is `500`.
+
+For webhook delivery:
+
+- `webhookDelivery = true` only works in normal bot mode.
+- The bot needs permission to manage webhooks in the configured channel.
+- Minecraft player chat is mirrored cleanly through the webhook using the player name and Minotar helm avatar.
+- Join, leave, start, and stop events still use normal bot messages.
+- Selfbot mode is explicitly blocked from webhook delivery.
 
 Invalid config disables the bridge and logs a clear error without crashing the Minecraft server.
 

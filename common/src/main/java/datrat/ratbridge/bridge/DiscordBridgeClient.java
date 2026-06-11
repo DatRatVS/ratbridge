@@ -9,6 +9,10 @@ public interface DiscordBridgeClient extends AutoCloseable {
 
     CompletableFuture<Void> sendMessage(String message);
 
+    default CompletableFuture<Void> sendMinecraftChatMessage(String player, String message) {
+        return sendMessage(message);
+    }
+
     default void sendMessageBlocking(String message, Duration timeout) {
         try {
             sendMessage(message).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);

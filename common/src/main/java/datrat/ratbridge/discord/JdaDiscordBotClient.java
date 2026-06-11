@@ -6,12 +6,20 @@ import datrat.ratbridge.bridge.DiscordInboundMessage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Webhook;
+import net.dv8tion.jda.api.entities.WebhookClient;
+import net.dv8tion.jda.api.entities.WebhookType;
+import net.dv8tion.jda.api.entities.channel.attribute.IWebhookContainer;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -23,6 +31,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
 
     private JDA jda;
     private MessageChannel targetChannel;
+    private WebhookClient<Message> webhookClient;
 
     @Override
     public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) throws Exception {
@@ -47,6 +56,9 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         if (targetChannel == null) {
             throw new IllegalStateException("Discord text channel not found or unavailable: " + config.channelId());
         }
+        if (config.webhookDelivery()) {
+            this.webhookClient = resolveWebhookClient(config);
+        }
     }
 
     @Override
@@ -66,12 +78,47 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<Void> sendMinecraftChatMessage(String player, String message) {
+        if (webhookClient == null || message.isBlank()) {
+            return sendMessage(message);
+        }
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        webhookClient.sendMessage(message)
+                .setUsername(webhookUsername(player))
+                .setAvatarUrl(minotarHelmAvatarUrl(player))
+                .queue(
+                        sent -> future.complete(null),
+                        error -> {
+                            LOGGER.warn("Failed to send Discord webhook message", error);
+                            future.complete(null);
+                        }
+                );
+        return future;
+    }
+
+    @Override
     public void close() {
         if (jda != null) {
             jda.shutdown();
             jda = null;
             targetChannel = null;
+            webhookClient = null;
         }
+    }
+
+    private WebhookClient<Message> resolveWebhookClient(BridgeConfig config) {
+        if (!(targetChannel instanceof IWebhookContainer webhookContainer)) {
+            throw new IllegalStateException("Discord channel does not support webhooks: " + config.channelId());
+        }
+
+        List<Webhook> webhooks = webhookContainer.retrieveWebhooks().complete();
+        return webhooks.stream()
+                .filter(webhook -> webhook.getType() == WebhookType.INCOMING)
+                .filter(webhook -> BridgeConfig.hasText(webhook.getToken()))
+                .filter(webhook -> webhook.getName().equals(config.webhookName()))
+                .sorted(Comparator.comparing(Webhook::getId))
+                .findFirst()
+                .orElseGet(() -> webhookContainer.createWebhook(config.webhookName()).complete());
     }
 
     private static void handleMessage(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer, MessageReceivedEvent event) {
@@ -99,5 +146,17 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         if (!content.isBlank()) {
             inboundConsumer.accept(new DiscordInboundMessage(event.getAuthor().getEffectiveName(), content));
         }
+    }
+
+    private static String webhookUsername(String player) {
+        if (player == null || player.isBlank()) {
+            return "Minecraft";
+        }
+        return player.length() > 80 ? player.substring(0, 80) : player;
+    }
+
+    private static String minotarHelmAvatarUrl(String player) {
+        String encoded = URLEncoder.encode(webhookUsername(player), StandardCharsets.UTF_8);
+        return "https://minotar.net/helm/" + encoded + ".png";
     }
 }

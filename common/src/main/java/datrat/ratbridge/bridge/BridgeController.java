@@ -44,7 +44,15 @@ public final class BridgeController {
                 "player", player,
                 "message", message
         ));
-        sendToDiscord(formatted);
+        DiscordBridgeClient currentClient = client;
+        if (currentClient == null) {
+            return;
+        }
+        if (current.webhookDelivery()) {
+            currentClient.sendMinecraftChatMessage(player, MentionSanitizer.sanitize(message));
+            return;
+        }
+        currentClient.sendMessage(MentionSanitizer.sanitize(formatted));
     }
 
     public void onPlayerJoined(String player) {

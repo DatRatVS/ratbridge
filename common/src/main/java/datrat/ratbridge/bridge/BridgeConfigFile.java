@@ -72,6 +72,8 @@ public final class BridgeConfigFile {
                 string(values, "serverId", ""),
                 string(values, "channelId", ""),
                 bool(values, "enableSelfbot", false),
+                bool(values, "webhookDelivery", false),
+                string(values, "webhookName", "RatBridge"),
                 bool(values, "syncChat", true),
                 bool(values, "syncPlayerJoin", true),
                 bool(values, "syncPlayerLeave", true),
@@ -154,7 +156,17 @@ public final class BridgeConfigFile {
                 + "\n"
                 + "# Selfbot polling interval in milliseconds for DM/Group DM reads.\n"
                 + "# Lower values reduce delay but can hit Discord rate limits faster. Minimum: 500.\n"
-                + "selfbotPollIntervalMillis = " + integer(values, "selfbotPollIntervalMillis", 750) + "\n";
+                + "selfbotPollIntervalMillis = " + integer(values, "selfbotPollIntervalMillis", 750) + "\n"
+                + "\n"
+                + "# Send Minecraft player chat through a Discord webhook instead of normal bot messages.\n"
+                + "# This only affects Minecraft player chat. Join/leave/start/stop events still use normal bot messages.\n"
+                + "# Webhook mode mirrors Minecraft chat cleanly: username = Minecraft name, avatar = Minotar helm skin, content = message.\n"
+                + "# Requires mode = \"bot\" and the bot needs permission to manage webhooks in the Discord channel.\n"
+                + "# This is strictly blocked for selfbot mode.\n"
+                + "webhookDelivery = " + boolString(values, "webhookDelivery", false) + "\n"
+                + "\n"
+                + "# Name of the webhook RatBridge creates/reuses in the configured Discord channel.\n"
+                + "webhookName = " + quote(string(values, "webhookName", "RatBridge")) + "\n";
     }
 
     private static String defaultMessagesToml(Map<String, String> values) {
