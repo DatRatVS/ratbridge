@@ -17,6 +17,8 @@ public record BridgeConfig(
         boolean webhookDelivery,
         String webhookName,
         boolean syncChat,
+        boolean syncMinecraftToDiscordChat,
+        boolean syncDiscordToMinecraftChat,
         boolean syncPlayerJoin,
         boolean syncPlayerLeave,
         boolean syncPlayerDeath,

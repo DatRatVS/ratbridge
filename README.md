@@ -31,8 +31,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 
 - **Server-Side Mod**: Runs on dedicated servers without requiring clients to install the mod.
 - **Multi-Loader Targets**: Builds for Forge `1.20.1`, Fabric `1.20.1`, and NeoForge `1.20.2`.
-- **Minecraft to Discord Chat**: Sends player chat messages from Minecraft to a configured Discord channel.
-- **Discord to Minecraft Chat**: Broadcasts Discord messages back into Minecraft as server system messages.
+- **Directional Chat Sync**: Separately toggles Minecraft -> Discord and Discord -> Minecraft chat sync.
 - **Player Event Sync**: Sends player join, leave, death, and advancement events to Discord.
 - **Server Lifecycle Sync**: Sends server start and shutdown messages to Discord.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
@@ -114,7 +113,12 @@ webhookName = "RatBridge"
 
 ```toml
 # Toggles for each synced listener/event type.
+# syncChat is the legacy master chat switch; false disables both chat directions.
 syncChat = true
+
+# Directional chat switches. These let you keep one side readable while muting the other side.
+syncMinecraftToDiscordChat = true
+syncDiscordToMinecraftChat = true
 syncPlayerJoin = true
 syncPlayerLeave = true
 syncPlayerDeath = true
@@ -211,9 +215,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.4.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.4.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.4.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.5.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.5.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.5.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

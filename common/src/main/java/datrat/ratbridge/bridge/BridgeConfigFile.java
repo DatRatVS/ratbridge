@@ -75,6 +75,8 @@ public final class BridgeConfigFile {
                 bool(values, "webhookDelivery", false),
                 string(values, "webhookName", "RatBridge"),
                 bool(values, "syncChat", true),
+                bool(values, "syncMinecraftToDiscordChat", true),
+                bool(values, "syncDiscordToMinecraftChat", true),
                 bool(values, "syncPlayerJoin", true),
                 bool(values, "syncPlayerLeave", true),
                 bool(values, "syncPlayerDeath", true),
@@ -180,10 +182,13 @@ public final class BridgeConfigFile {
                 
                 # Listener toggles.
                 # Set a value to false to stop syncing that specific message/event type.
-                # syncChat controls both Minecraft -> Discord player chat and Discord -> Minecraft messages.
-                # More directional chat toggles are planned separately.
+                # syncChat is a master/legacy chat toggle. Set false to disable both chat directions.
+                # syncMinecraftToDiscordChat controls Minecraft player chat sent to Discord.
+                # syncDiscordToMinecraftChat controls Discord messages shown in Minecraft.
                 """
                 + "syncChat = " + boolString(values, "syncChat", true) + "\n"
+                + "syncMinecraftToDiscordChat = " + boolString(values, "syncMinecraftToDiscordChat", true) + "\n"
+                + "syncDiscordToMinecraftChat = " + boolString(values, "syncDiscordToMinecraftChat", true) + "\n"
                 + "syncPlayerJoin = " + boolString(values, "syncPlayerJoin", true) + "\n"
                 + "syncPlayerLeave = " + boolString(values, "syncPlayerLeave", true) + "\n"
                 + "syncPlayerDeath = " + boolString(values, "syncPlayerDeath", true) + "\n"

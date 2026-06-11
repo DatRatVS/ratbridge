@@ -37,7 +37,7 @@ public final class BridgeController {
 
     public void onMinecraftChat(String player, String message) {
         BridgeConfig current = config;
-        if (!isRunning() || current == null || !current.syncChat()) {
+        if (!isRunning() || current == null || !current.syncChat() || !current.syncMinecraftToDiscordChat()) {
             return;
         }
         String formatted = MessageFormatter.format(current.minecraftToDiscordFormat(), Map.of(
@@ -131,7 +131,7 @@ public final class BridgeController {
     private void onDiscordMessage(DiscordInboundMessage inbound) {
         BridgeConfig current = config;
         MinecraftMessageSink sink = minecraftSink;
-        if (!isRunning() || current == null || sink == null || !current.syncChat()) {
+        if (!isRunning() || current == null || sink == null || !current.syncChat() || !current.syncDiscordToMinecraftChat()) {
             return;
         }
         String formatted = MessageFormatter.format(current.discordToMinecraftFormat(), Map.of(

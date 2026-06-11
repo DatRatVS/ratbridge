@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 final class BridgeControllerTest {
     @Test
@@ -47,10 +48,43 @@ final class BridgeControllerTest {
         assertEquals("[MC] Alex has made the advancement [Stone Age]", client.normalMessage);
     }
 
+    @Test
+    void canDisableMinecraftToDiscordChatWithoutDisablingDiscordToMinecraft() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        CapturingMinecraftSink sink = new CapturingMinecraftSink();
+
+        controller.start(config(false, false, true), sink, () -> client);
+        controller.onMinecraftChat("Steve", "hidden from discord");
+        client.receive(new DiscordInboundMessage("Alex", "visible in minecraft"));
+
+        assertNull(client.normalMessage);
+        assertEquals("[Discord] <Alex> visible in minecraft", sink.message);
+    }
+
+    @Test
+    void canDisableDiscordToMinecraftChatWithoutDisablingMinecraftToDiscord() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        CapturingMinecraftSink sink = new CapturingMinecraftSink();
+
+        controller.start(config(false, true, false), sink, () -> client);
+        controller.onMinecraftChat("Steve", "visible in discord");
+        client.receive(new DiscordInboundMessage("Alex", "hidden from minecraft"));
+
+        assertEquals("[MC] <Steve> visible in discord", client.normalMessage);
+        assertNull(sink.message);
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
+        return config(webhookDelivery, true, true);
+    }
+
+    private static BridgeConfig config(boolean webhookDelivery, boolean syncMinecraftToDiscordChat, boolean syncDiscordToMinecraftChat) {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 webhookDelivery, "RatBridge",
-                true, true, true, true, true, true, true,
+                true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
+                true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
@@ -60,9 +94,15 @@ final class BridgeControllerTest {
         private String normalMessage;
         private String webhookPlayer;
         private String webhookMessage;
+        private Consumer<DiscordInboundMessage> inboundConsumer;
 
         @Override
         public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) {
+            this.inboundConsumer = inboundConsumer;
+        }
+
+        private void receive(DiscordInboundMessage message) {
+            inboundConsumer.accept(message);
         }
 
         @Override
@@ -80,6 +120,15 @@ final class BridgeControllerTest {
 
         @Override
         public void close() {
+        }
+    }
+
+    private static final class CapturingMinecraftSink implements MinecraftMessageSink {
+        private String message;
+
+        @Override
+        public void sendSystemMessage(String message) {
+            this.message = message;
         }
     }
 }

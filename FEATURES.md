@@ -40,7 +40,7 @@ B - More events to listen: ✅
     . Deaths
     . Advancements/achievenments
 
-C - Toggles
+C - Toggles: ✅
     . Feature toggling in a config file such as:
     (C1 - Disable minecraft to discord chat but preserve other way.)
     (C2 - Disable discord to minecraft chat but preserve the other way.)
