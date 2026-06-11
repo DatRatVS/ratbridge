@@ -11,21 +11,58 @@ public final class BridgeConfigFile {
     private BridgeConfigFile() {
     }
 
-    public static BridgeConfig load(Path path) throws IOException {
-        if (Files.notExists(path)) {
-            writeDefault(path);
+    public static BridgeConfig loadSplit(Path directory) throws IOException {
+        Path configPath = directory.resolve("config.toml");
+        Path messagesPath = directory.resolve("messages.toml");
+        Path legacyPath = directory.getParent() == null ? null : directory.getParent().resolve("ratbridge.toml");
+        Map<String, String> legacyValues = legacyPath != null && Files.exists(legacyPath) ? readValues(legacyPath) : Map.of();
+
+        if (Files.notExists(configPath)) {
+            writeDefaultConfig(configPath, legacyValues);
+        }
+        if (Files.notExists(messagesPath)) {
+            writeDefaultMessages(messagesPath, legacyValues);
         }
 
         Map<String, String> values = new LinkedHashMap<>();
-        for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
-            String stripped = stripComment(line).trim();
-            if (stripped.isEmpty() || stripped.startsWith("[") || !stripped.contains("=")) {
-                continue;
-            }
-            String[] parts = stripped.split("=", 2);
-            values.put(parts[0].trim(), unquote(parts[1].trim()));
+        values.putAll(readValues(configPath));
+        values.putAll(readValues(messagesPath));
+        return fromValues(values);
+    }
+
+    public static BridgeConfig loadLegacy(Path path) throws IOException {
+        if (Files.notExists(path)) {
+            writeDefaultLegacy(path);
         }
 
+        return fromValues(readValues(path));
+    }
+
+    public static void writeDefaultConfig(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultConfigToml(seedValues));
+    }
+
+    public static void writeDefaultMessages(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultMessagesToml(seedValues));
+    }
+
+    public static void writeDefaultLegacy(Path path) throws IOException {
+        write(path, defaultLegacyToml());
+    }
+
+    public static String defaultConfigToml() {
+        return defaultConfigToml(Map.of());
+    }
+
+    public static String defaultMessagesToml() {
+        return defaultMessagesToml(Map.of());
+    }
+
+    public static String defaultLegacyToml() {
+        return defaultConfigToml() + "\n" + defaultMessagesToml();
+    }
+
+    private static BridgeConfig fromValues(Map<String, String> values) {
         return new BridgeConfig(
                 bool(values, "enabled", true),
                 string(values, "client", "discord"),
@@ -43,43 +80,69 @@ public final class BridgeConfigFile {
                 integer(values, "selfbotPollIntervalMillis", 750),
                 string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}"),
                 string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}"),
-                string(values, "eventFormat", "[MC] {message}")
+                string(values, "eventFormat", "[MC] {message}"),
+                string(values, "playerJoinMessage", "{player} joined the game"),
+                string(values, "playerLeaveMessage", "{player} left the game"),
+                string(values, "serverStartMessage", "Server started"),
+                string(values, "serverStopMessage", "Server stopping")
         );
     }
 
-    public static void writeDefault(Path path) throws IOException {
+    private static Map<String, String> readValues(Path path) throws IOException {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+            String stripped = stripComment(line).trim();
+            if (stripped.isEmpty() || stripped.startsWith("[") || !stripped.contains("=")) {
+                continue;
+            }
+            String[] parts = stripped.split("=", 2);
+            values.put(parts[0].trim(), unquote(parts[1].trim()));
+        }
+        return values;
+    }
+
+    private static void write(Path path, String content) throws IOException {
         Path parent = path.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        Files.writeString(path, defaultToml(), StandardCharsets.UTF_8);
+        Files.writeString(path, content, StandardCharsets.UTF_8);
     }
 
-    public static String defaultToml() {
+    private static String defaultConfigToml(Map<String, String> values) {
+        return "enabled = " + boolString(values, "enabled", true) + "\n"
+                + "client = " + quote(string(values, "client", "discord")) + "\n"
+                + "mode = " + quote(string(values, "mode", "bot")) + "\n"
+                + "\n"
+                + "token = " + quote(string(values, "token", "")) + "\n"
+                + "tokenEnv = " + quote(string(values, "tokenEnv", "RATBRIDGE_DISCORD_TOKEN")) + "\n"
+                + "\n"
+                + "serverId = " + quote(string(values, "serverId", "")) + "\n"
+                + "channelId = " + quote(string(values, "channelId", "")) + "\n"
+                + "\n"
+                + "enableSelfbot = " + boolString(values, "enableSelfbot", false) + "\n"
+                + "selfbotPollIntervalMillis = " + integer(values, "selfbotPollIntervalMillis", 750) + "\n";
+    }
+
+    private static String defaultMessagesToml(Map<String, String> values) {
         return """
-                enabled = true
-                client = "discord"
-                mode = "bot"
-
-                token = ""
-                tokenEnv = "RATBRIDGE_DISCORD_TOKEN"
-
-                serverId = ""
-                channelId = ""
-
-                enableSelfbot = false
-                selfbotPollIntervalMillis = 750
-
-                syncChat = true
-                syncPlayerJoin = true
-                syncPlayerLeave = true
-                syncServerStart = true
-                syncServerStop = true
-
-                minecraftToDiscordFormat = "[MC] <{player}> {message}"
-                discordToMinecraftFormat = "[Discord] <{author}> {message}"
-                eventFormat = "[MC] {message}"
-                """;
+                # Listener toggles
+                """
+                + "syncChat = " + boolString(values, "syncChat", true) + "\n"
+                + "syncPlayerJoin = " + boolString(values, "syncPlayerJoin", true) + "\n"
+                + "syncPlayerLeave = " + boolString(values, "syncPlayerLeave", true) + "\n"
+                + "syncServerStart = " + boolString(values, "syncServerStart", true) + "\n"
+                + "syncServerStop = " + boolString(values, "syncServerStop", true) + "\n"
+                + "\n"
+                + "# Message formats. Available placeholders depend on each message.\n"
+                + "minecraftToDiscordFormat = " + quote(string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}")) + "\n"
+                + "discordToMinecraftFormat = " + quote(string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}")) + "\n"
+                + "eventFormat = " + quote(string(values, "eventFormat", "[MC] {message}")) + "\n"
+                + "\n"
+                + "playerJoinMessage = " + quote(string(values, "playerJoinMessage", "{player} joined the game")) + "\n"
+                + "playerLeaveMessage = " + quote(string(values, "playerLeaveMessage", "{player} left the game")) + "\n"
+                + "serverStartMessage = " + quote(string(values, "serverStartMessage", "Server started")) + "\n"
+                + "serverStopMessage = " + quote(string(values, "serverStopMessage", "Server stopping")) + "\n";
     }
 
     private static String stripComment(String line) {
@@ -105,6 +168,10 @@ public final class BridgeConfigFile {
         return value == null ? fallback : Boolean.parseBoolean(value);
     }
 
+    private static String boolString(Map<String, String> values, String key, boolean fallback) {
+        return Boolean.toString(bool(values, key, fallback));
+    }
+
     private static int integer(Map<String, String> values, String key, int fallback) {
         String value = values.get(key);
         if (value == null) {
@@ -122,5 +189,9 @@ public final class BridgeConfigFile {
             return value.substring(1, value.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
         }
         return value;
+    }
+
+    private static String quote(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 }

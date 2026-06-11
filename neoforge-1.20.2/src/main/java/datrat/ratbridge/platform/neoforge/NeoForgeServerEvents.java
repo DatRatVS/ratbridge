@@ -161,7 +161,7 @@ public final class NeoForgeServerEvents {
     }
 
     private BridgeConfig loadConfig() throws Exception {
-        Path configPath = FMLPaths.CONFIGDIR.get().resolve("ratbridge.toml");
-        return BridgeConfigFile.load(configPath);
+        Path configDirectory = FMLPaths.CONFIGDIR.get().resolve("ratbridge");
+        return BridgeConfigFile.loadSplit(configDirectory);
     }
 }

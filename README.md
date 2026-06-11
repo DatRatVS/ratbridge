@@ -66,10 +66,11 @@ Discord forbids automated normal user accounts/selfbots. Using selfbot mode can 
 RatBridge generates:
 
 ```text
-config/ratbridge.toml
+config/ratbridge/config.toml
+config/ratbridge/messages.toml
 ```
 
-Default config shape:
+`config.toml` holds connection/client settings:
 
 ```toml
 enabled = true
@@ -84,7 +85,11 @@ channelId = ""
 
 enableSelfbot = false
 selfbotPollIntervalMillis = 750
+```
 
+`messages.toml` holds listener toggles and editable message text:
+
+```toml
 syncChat = true
 syncPlayerJoin = true
 syncPlayerLeave = true
@@ -94,7 +99,14 @@ syncServerStop = true
 minecraftToDiscordFormat = "[MC] <{player}> {message}"
 discordToMinecraftFormat = "[Discord] <{author}> {message}"
 eventFormat = "[MC] {message}"
+
+playerJoinMessage = "{player} joined the game"
+playerLeaveMessage = "{player} left the game"
+serverStartMessage = "Server started"
+serverStopMessage = "Server stopping"
 ```
+
+If an old `config/ratbridge.toml` exists and the split files do not, RatBridge seeds the new files from the legacy values.
 
 For bot mode:
 
@@ -124,7 +136,7 @@ The command requires permission level `2`.
 Reload behavior:
 
 - Stops the active bridge.
-- Reloads `config/ratbridge.toml`.
+- Reloads `config/ratbridge/config.toml` and `config/ratbridge/messages.toml`.
 - Validates the new config.
 - Reconnects Discord asynchronously so the server thread does not wait on Discord login.
 

@@ -54,7 +54,8 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 true, true, true, true, true,
                 250,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
 
@@ -67,7 +68,8 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
                 true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
 
@@ -80,7 +82,8 @@ final class BridgeConfigTest {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}");
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "Server started", "Server stopping");
     }
 
     private static Function<String, String> emptyEnv() {

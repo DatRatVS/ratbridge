@@ -3,6 +3,7 @@ package datrat.ratbridge.platform.forge;
 import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.RatBridge;
 import datrat.ratbridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
 import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
@@ -17,10 +18,9 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.config.ConfigTracker;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
 
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +38,14 @@ public final class ForgeServerEvents {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         serverAvailable.set(true);
-        BridgeConfig config = RatBridgeForgeConfig.snapshot();
+        BridgeConfig config;
+        try {
+            config = loadConfig();
+        } catch (Exception error) {
+            RatBridge.LOGGER.error("RatBridge config could not be loaded; bridge will stay disabled", error);
+            return;
+        }
+
         if (!config.enabled()) {
             RatBridge.LOGGER.info("RatBridge is disabled by config");
             return;
@@ -104,8 +111,9 @@ public final class ForgeServerEvents {
         MinecraftServer server = source.getServer();
         bridge.stop();
 
+        BridgeConfig config;
         try {
-            ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.COMMON, FMLPaths.CONFIGDIR.get());
+            config = loadConfig();
         } catch (Exception error) {
             reloadInProgress.set(false);
             RatBridge.LOGGER.error("RatBridge config reload failed", error);
@@ -113,7 +121,6 @@ public final class ForgeServerEvents {
             return 0;
         }
 
-        BridgeConfig config = RatBridgeForgeConfig.snapshot();
         if (!config.enabled()) {
             reloadInProgress.set(false);
             source.sendSuccess(() -> Component.literal("RatBridge reloaded; bridge is disabled by config."), false);
@@ -151,5 +158,10 @@ public final class ForgeServerEvents {
             }
         });
         return 1;
+    }
+
+    private BridgeConfig loadConfig() throws Exception {
+        Path configDirectory = FMLPaths.CONFIGDIR.get().resolve("ratbridge");
+        return BridgeConfigFile.loadSplit(configDirectory);
     }
 }

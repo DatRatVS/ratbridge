@@ -52,7 +52,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerJoin()) {
             return;
         }
-        sendEvent(player + " joined the game");
+        sendEvent(MessageFormatter.format(current.playerJoinMessage(), Map.of("player", player)));
     }
 
     public void onPlayerLeft(String player) {
@@ -60,7 +60,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerLeave()) {
             return;
         }
-        sendEvent(player + " left the game");
+        sendEvent(MessageFormatter.format(current.playerLeaveMessage(), Map.of("player", player)));
     }
 
     public void onServerStarted() {
@@ -68,7 +68,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncServerStart()) {
             return;
         }
-        sendEvent("Server started");
+        sendEvent(current.serverStartMessage());
     }
 
     public void onServerStopping() {
@@ -77,7 +77,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || currentClient == null || !current.syncServerStop()) {
             return;
         }
-        String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", "Server stopping"));
+        String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", current.serverStopMessage()));
         currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
     }
 

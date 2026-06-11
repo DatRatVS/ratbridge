@@ -159,7 +159,7 @@ public final class RatBridgeFabric implements ModInitializer {
     }
 
     private BridgeConfig loadConfig() throws Exception {
-        Path configPath = FabricLoader.getInstance().getConfigDir().resolve("ratbridge.toml");
-        return BridgeConfigFile.load(configPath);
+        Path configDirectory = FabricLoader.getInstance().getConfigDir().resolve("ratbridge");
+        return BridgeConfigFile.loadSplit(configDirectory);
     }
 }

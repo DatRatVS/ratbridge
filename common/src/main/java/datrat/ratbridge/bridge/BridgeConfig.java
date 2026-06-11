@@ -22,7 +22,11 @@ public record BridgeConfig(
         int selfbotPollIntervalMillis,
         String minecraftToDiscordFormat,
         String discordToMinecraftFormat,
-        String eventFormat
+        String eventFormat,
+        String playerJoinMessage,
+        String playerLeaveMessage,
+        String serverStartMessage,
+        String serverStopMessage
 ) {
     public String normalizedClient() {
         return normalize(client);
