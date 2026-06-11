@@ -203,9 +203,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.2.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.2.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.2.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.3.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.3.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.3.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.
