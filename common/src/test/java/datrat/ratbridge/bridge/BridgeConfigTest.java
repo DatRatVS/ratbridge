@@ -54,7 +54,7 @@ final class BridgeConfigTest {
     void selfbotPollIntervalHasMinimum() {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 false, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 250,
@@ -71,7 +71,7 @@ final class BridgeConfigTest {
     void webhookDeliveryRequiresBotMode() {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 true, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -88,7 +88,7 @@ final class BridgeConfigTest {
     void unsupportedClientAndModeAreInvalid() {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
                 false, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -106,7 +106,7 @@ final class BridgeConfigTest {
     void topicUpdaterRequiresBotModeAndRateLimitSafeInterval() {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 false, "RatBridge",
-                true, "", "Players: %playercount%/%playermax%", "Server is offline", 5,
+                true, "", "Players: %playercount%/%playermax%", "Server is offline", 4,
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -117,15 +117,15 @@ final class BridgeConfigTest {
 
         assertFalse(result.valid());
         assertTrue(result.errors().contains("topicUpdaterEnabled requires mode = 'bot'; Discord channel topics cannot be managed by selfbot mode"));
-        assertTrue(result.errors().contains("topicUpdaterIntervalMinutes must be at least 10 to respect Discord rate limits"));
+        assertTrue(result.errors().contains("topicUpdaterIntervalMinutes must be at least 5 to respect Discord rate limits"));
     }
 
     @Test
     void channelNameUpdatersRequireBotModeAndRateLimitSafeInterval() {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 false, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
-                List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 5)),
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 4)),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -137,13 +137,13 @@ final class BridgeConfigTest {
         assertTrue(result.errors().contains("channel name updaters require mode = 'bot'; Discord guild channels cannot be managed by selfbot mode"));
         assertTrue(result.errors().contains("channelNameUpdater1ChannelId is required"));
         assertTrue(result.errors().contains("channelNameUpdater1Message is required"));
-        assertTrue(result.errors().contains("channelNameUpdater1UpdateInterval must be at least 10 to respect Discord rate limits"));
+        assertTrue(result.errors().contains("channelNameUpdater1UpdateInterval must be at least 5 to respect Discord rate limits"));
     }
 
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 false, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,

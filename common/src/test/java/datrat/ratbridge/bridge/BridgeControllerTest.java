@@ -141,7 +141,7 @@ final class BridgeControllerTest {
     private static BridgeConfig config(boolean webhookDelivery, boolean syncMinecraftToDiscordChat, boolean syncDiscordToMinecraftChat) {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 webhookDelivery, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
@@ -165,8 +165,8 @@ final class BridgeControllerTest {
     private static BridgeConfig channelNameConfig() {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 false, "RatBridge",
-                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
-                List.of(new ChannelNameUpdaterConfig("name-channel", "%playercount% players online", "Server is offline", 10)),
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(new ChannelNameUpdaterConfig("name-channel", "%playercount% players online", "Server is offline", 6)),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,

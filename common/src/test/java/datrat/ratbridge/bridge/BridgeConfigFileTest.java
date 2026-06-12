@@ -31,7 +31,7 @@ final class BridgeConfigFileTest {
         assertEquals("", loaded.topicUpdaterChannelId());
         assertEquals("Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m", loaded.topicUpdaterMessage());
         assertEquals("Server is offline", loaded.topicUpdaterShutdownMessage());
-        assertEquals(10, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(6, loaded.topicUpdaterIntervalMinutes());
         assertEquals(0, loaded.channelNameUpdaters().size());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
@@ -66,7 +66,7 @@ final class BridgeConfigFileTest {
                 channelNameUpdater1ChannelId = "100"
                 channelNameUpdater1Message = "%playercount% players"
                 channelNameUpdater1ShutdownMessage = "offline"
-                channelNameUpdater1UpdateInterval = 10
+                channelNameUpdater1UpdateInterval = 6
                 channelNameUpdater2ChannelId = "101"
                 channelNameUpdater2Message = "TPS %tps%"
                 channelNameUpdater2ShutdownMessage = "offline"
@@ -124,7 +124,7 @@ final class BridgeConfigFileTest {
                 channelNameUpdater1ChannelId = "100"
                 channelNameUpdater1Message = "%playercount% players"
                 channelNameUpdater1ShutdownMessage = "offline"
-                channelNameUpdater1UpdateInterval = 10
+                channelNameUpdater1UpdateInterval = 6
                 syncMinecraftToDiscordChat = false
                 syncDiscordToMinecraftChat = true
                 syncPlayerJoin = false

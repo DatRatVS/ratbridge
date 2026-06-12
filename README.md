@@ -124,12 +124,12 @@ topicUpdaterMessage = "Players: %playercount%/%playermax% | TPS: %tps% | Uptime:
 # Topic applied when the server shuts down.
 topicUpdaterShutdownMessage = "Server is offline"
 
-# Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.
-topicUpdaterIntervalMinutes = 10
+# Minutes between topic updates. Minimum: 5; 6+ is recommended to avoid Discord rate limits.
+topicUpdaterIntervalMinutes = 6
 
 # Discord channel name updaters. Bot mode only; requires Manage Channels permission.
 # Set channelNameUpdaterCount to how many numbered entries should be used.
-# Minimum update interval is 10 minutes because Discord rate-limits channel renames.
+# Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.
 channelNameUpdaterCount = 0
 
 # Example:
@@ -137,11 +137,11 @@ channelNameUpdaterCount = 0
 # channelNameUpdater1ChannelId = "000000000000000000"
 # channelNameUpdater1Message = "%playercount% players online"
 # channelNameUpdater1ShutdownMessage = "Server is offline"
-# channelNameUpdater1UpdateInterval = 10
+# channelNameUpdater1UpdateInterval = 6
 # channelNameUpdater2ChannelId = "000000000000000000"
 # channelNameUpdater2Message = "TPS %tps%"
 # channelNameUpdater2ShutdownMessage = "Server is offline"
-# channelNameUpdater2UpdateInterval = 10
+# channelNameUpdater2UpdateInterval = 6
 ```
 
 `messages.toml` holds listener toggles and editable message text:

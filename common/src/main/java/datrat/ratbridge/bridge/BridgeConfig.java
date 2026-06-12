@@ -115,8 +115,8 @@ public record BridgeConfig(
             errors.add("topicUpdaterMessage is required when topicUpdaterEnabled is true");
         }
 
-        if (topicUpdaterEnabled && topicUpdaterIntervalMinutes < 10) {
-            errors.add("topicUpdaterIntervalMinutes must be at least 10 to respect Discord rate limits");
+        if (topicUpdaterEnabled && topicUpdaterIntervalMinutes < 5) {
+            errors.add("topicUpdaterIntervalMinutes must be at least 5 to respect Discord rate limits");
         }
 
         if (!channelNameUpdaters.isEmpty() && !"bot".equals(resolvedMode)) {
@@ -132,8 +132,8 @@ public record BridgeConfig(
             if (!hasText(updater.message())) {
                 errors.add(prefix + "Message is required");
             }
-            if (updater.updateIntervalMinutes() < 10) {
-                errors.add(prefix + "UpdateInterval must be at least 10 to respect Discord rate limits");
+            if (updater.updateIntervalMinutes() < 5) {
+                errors.add(prefix + "UpdateInterval must be at least 5 to respect Discord rate limits");
             }
         }
 

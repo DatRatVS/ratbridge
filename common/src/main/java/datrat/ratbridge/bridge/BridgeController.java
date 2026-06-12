@@ -179,7 +179,7 @@ public final class BridgeController {
             thread.setDaemon(true);
             return thread;
         });
-        long intervalMinutes = Math.max(10, current.topicUpdaterIntervalMinutes());
+        long intervalMinutes = Math.max(5, current.topicUpdaterIntervalMinutes());
         topicUpdater.scheduleWithFixedDelay(this::updateTopicSafely, 0L, intervalMinutes, TimeUnit.MINUTES);
     }
 
@@ -233,7 +233,7 @@ public final class BridgeController {
             return thread;
         });
         for (ChannelNameUpdaterConfig updater : current.channelNameUpdaters()) {
-            long intervalMinutes = Math.max(10, updater.updateIntervalMinutes());
+            long intervalMinutes = Math.max(5, updater.updateIntervalMinutes());
             channelNameUpdater.scheduleWithFixedDelay(
                     () -> updateChannelNameSafely(updater),
                     0L,

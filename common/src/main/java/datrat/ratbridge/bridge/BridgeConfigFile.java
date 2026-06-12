@@ -80,7 +80,7 @@ public final class BridgeConfigFile {
                 string(values, "topicUpdaterChannelId", ""),
                 string(values, "topicUpdaterMessage", "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"),
                 string(values, "topicUpdaterShutdownMessage", "Server is offline"),
-                integer(values, "topicUpdaterIntervalMinutes", 10),
+                integer(values, "topicUpdaterIntervalMinutes", 6),
                 channelNameUpdaters(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
@@ -198,22 +198,22 @@ public final class BridgeConfigFile {
                 + "# Topic text applied during server shutdown. Uses the last server snapshot placeholders.\n"
                 + "topicUpdaterShutdownMessage = " + quote(string(values, "topicUpdaterShutdownMessage", "Server is offline")) + "\n"
                 + "\n"
-                + "# Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.\n"
-                + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 10) + "\n"
+                + "# Minutes between topic updates. Minimum: 5; 6+ is recommended to avoid Discord rate limits.\n"
+                + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 6) + "\n"
                 + "\n"
                 + "# Discord channel name updaters. Bot mode only; the bot needs Manage Channels permission.\n"
                 + "# Set channelNameUpdaterCount to how many numbered entries you want to use.\n"
-                + "# Minimum update interval is 10 minutes because Discord heavily rate-limits channel renames.\n"
+                + "# Minimum update interval is 5 minutes; 6+ is recommended because Discord heavily rate-limits channel renames.\n"
                 + "# Example:\n"
                 + "# channelNameUpdaterCount = 2\n"
                 + "# channelNameUpdater1ChannelId = \"000000000000000000\"\n"
                 + "# channelNameUpdater1Message = \"%playercount% players online\"\n"
                 + "# channelNameUpdater1ShutdownMessage = \"Server is offline\"\n"
-                + "# channelNameUpdater1UpdateInterval = 10\n"
+                + "# channelNameUpdater1UpdateInterval = 6\n"
                 + "# channelNameUpdater2ChannelId = \"000000000000000000\"\n"
                 + "# channelNameUpdater2Message = \"TPS %tps%\"\n"
                 + "# channelNameUpdater2ShutdownMessage = \"Server is offline\"\n"
-                + "# channelNameUpdater2UpdateInterval = 10\n"
+                + "# channelNameUpdater2UpdateInterval = 6\n"
                 + "channelNameUpdaterCount = " + integer(values, "channelNameUpdaterCount", 0) + "\n"
                 + channelNameUpdaterEntriesToml(values);
     }
@@ -328,7 +328,7 @@ public final class BridgeConfigFile {
                     string(values, prefix + "ChannelId", ""),
                     string(values, prefix + "Message", "%playercount% players online"),
                     string(values, prefix + "ShutdownMessage", "Server is offline"),
-                    integer(values, prefix + "UpdateInterval", 10)
+                    integer(values, prefix + "UpdateInterval", 6)
             ));
         }
         return List.copyOf(updaters);
@@ -342,7 +342,7 @@ public final class BridgeConfigFile {
             builder.append(prefix).append("ChannelId = ").append(quote(string(values, prefix + "ChannelId", ""))).append('\n');
             builder.append(prefix).append("Message = ").append(quote(string(values, prefix + "Message", "%playercount% players online"))).append('\n');
             builder.append(prefix).append("ShutdownMessage = ").append(quote(string(values, prefix + "ShutdownMessage", "Server is offline"))).append('\n');
-            builder.append(prefix).append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 10)).append('\n');
+            builder.append(prefix).append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 6)).append('\n');
         }
         return builder.toString();
     }
