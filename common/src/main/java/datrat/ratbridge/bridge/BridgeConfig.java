@@ -21,6 +21,7 @@ public record BridgeConfig(
         String topicUpdaterMessage,
         String topicUpdaterShutdownMessage,
         int topicUpdaterIntervalMinutes,
+        List<ChannelNameUpdaterConfig> channelNameUpdaters,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
         boolean syncDiscordToMinecraftChat,
@@ -116,6 +117,24 @@ public record BridgeConfig(
 
         if (topicUpdaterEnabled && topicUpdaterIntervalMinutes < 10) {
             errors.add("topicUpdaterIntervalMinutes must be at least 10 to respect Discord rate limits");
+        }
+
+        if (!channelNameUpdaters.isEmpty() && !"bot".equals(resolvedMode)) {
+            errors.add("channel name updaters require mode = 'bot'; Discord guild channels cannot be managed by selfbot mode");
+        }
+
+        for (int index = 0; index < channelNameUpdaters.size(); index++) {
+            ChannelNameUpdaterConfig updater = channelNameUpdaters.get(index);
+            String prefix = "channelNameUpdater" + (index + 1);
+            if (!hasText(updater.channelId())) {
+                errors.add(prefix + "ChannelId is required");
+            }
+            if (!hasText(updater.message())) {
+                errors.add(prefix + "Message is required");
+            }
+            if (updater.updateIntervalMinutes() < 10) {
+                errors.add(prefix + "UpdateInterval must be at least 10 to respect Discord rate limits");
+            }
         }
 
         if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class BridgeConfigFile {
@@ -79,6 +81,7 @@ public final class BridgeConfigFile {
                 string(values, "topicUpdaterMessage", "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"),
                 string(values, "topicUpdaterShutdownMessage", "Server is offline"),
                 integer(values, "topicUpdaterIntervalMinutes", 10),
+                channelNameUpdaters(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
                 bool(values, "syncDiscordToMinecraftChat", true),
@@ -196,7 +199,23 @@ public final class BridgeConfigFile {
                 + "topicUpdaterShutdownMessage = " + quote(string(values, "topicUpdaterShutdownMessage", "Server is offline")) + "\n"
                 + "\n"
                 + "# Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.\n"
-                + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 10) + "\n";
+                + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 10) + "\n"
+                + "\n"
+                + "# Discord channel name updaters. Bot mode only; the bot needs Manage Channels permission.\n"
+                + "# Set channelNameUpdaterCount to how many numbered entries you want to use.\n"
+                + "# Minimum update interval is 10 minutes because Discord heavily rate-limits channel renames.\n"
+                + "# Example:\n"
+                + "# channelNameUpdaterCount = 2\n"
+                + "# channelNameUpdater1ChannelId = \"000000000000000000\"\n"
+                + "# channelNameUpdater1Message = \"%playercount% players online\"\n"
+                + "# channelNameUpdater1ShutdownMessage = \"Server is offline\"\n"
+                + "# channelNameUpdater1UpdateInterval = 10\n"
+                + "# channelNameUpdater2ChannelId = \"000000000000000000\"\n"
+                + "# channelNameUpdater2Message = \"TPS %tps%\"\n"
+                + "# channelNameUpdater2ShutdownMessage = \"Server is offline\"\n"
+                + "# channelNameUpdater2UpdateInterval = 10\n"
+                + "channelNameUpdaterCount = " + integer(values, "channelNameUpdaterCount", 0) + "\n"
+                + channelNameUpdaterEntriesToml(values);
     }
 
     private static String defaultMessagesToml(Map<String, String> values) {
@@ -298,5 +317,33 @@ public final class BridgeConfigFile {
 
     private static String quote(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    private static List<ChannelNameUpdaterConfig> channelNameUpdaters(Map<String, String> values) {
+        int count = Math.max(0, integer(values, "channelNameUpdaterCount", 0));
+        List<ChannelNameUpdaterConfig> updaters = new ArrayList<>();
+        for (int index = 1; index <= count; index++) {
+            String prefix = "channelNameUpdater" + index;
+            updaters.add(new ChannelNameUpdaterConfig(
+                    string(values, prefix + "ChannelId", ""),
+                    string(values, prefix + "Message", "%playercount% players online"),
+                    string(values, prefix + "ShutdownMessage", "Server is offline"),
+                    integer(values, prefix + "UpdateInterval", 10)
+            ));
+        }
+        return List.copyOf(updaters);
+    }
+
+    private static String channelNameUpdaterEntriesToml(Map<String, String> values) {
+        int count = Math.max(0, integer(values, "channelNameUpdaterCount", 0));
+        StringBuilder builder = new StringBuilder();
+        for (int index = 1; index <= count; index++) {
+            String prefix = "channelNameUpdater" + index;
+            builder.append(prefix).append("ChannelId = ").append(quote(string(values, prefix + "ChannelId", ""))).append('\n');
+            builder.append(prefix).append("Message = ").append(quote(string(values, prefix + "Message", "%playercount% players online"))).append('\n');
+            builder.append(prefix).append("ShutdownMessage = ").append(quote(string(values, prefix + "ShutdownMessage", "Server is offline"))).append('\n');
+            builder.append(prefix).append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 10)).append('\n');
+        }
+        return builder.toString();
     }
 }

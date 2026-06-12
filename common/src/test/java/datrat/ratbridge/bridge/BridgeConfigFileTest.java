@@ -32,6 +32,7 @@ final class BridgeConfigFileTest {
         assertEquals("Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m", loaded.topicUpdaterMessage());
         assertEquals("Server is offline", loaded.topicUpdaterShutdownMessage());
         assertEquals(10, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(0, loaded.channelNameUpdaters().size());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals(true, loaded.syncPlayerDeath());
@@ -61,6 +62,15 @@ final class BridgeConfigFileTest {
                 topicUpdaterMessage = "%playercount% online"
                 topicUpdaterShutdownMessage = "offline"
                 topicUpdaterIntervalMinutes = 15
+                channelNameUpdaterCount = 2
+                channelNameUpdater1ChannelId = "100"
+                channelNameUpdater1Message = "%playercount% players"
+                channelNameUpdater1ShutdownMessage = "offline"
+                channelNameUpdater1UpdateInterval = 10
+                channelNameUpdater2ChannelId = "101"
+                channelNameUpdater2Message = "TPS %tps%"
+                channelNameUpdater2ShutdownMessage = "offline"
+                channelNameUpdater2UpdateInterval = 20
                 """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
@@ -84,6 +94,10 @@ final class BridgeConfigFileTest {
         assertEquals("%playercount% online", loaded.topicUpdaterMessage());
         assertEquals("offline", loaded.topicUpdaterShutdownMessage());
         assertEquals(15, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(2, loaded.channelNameUpdaters().size());
+        assertEquals("100", loaded.channelNameUpdaters().get(0).channelId());
+        assertEquals("%playercount% players", loaded.channelNameUpdaters().get(0).message());
+        assertEquals(20, loaded.channelNameUpdaters().get(1).updateIntervalMinutes());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
@@ -106,6 +120,11 @@ final class BridgeConfigFileTest {
                 topicUpdaterChannelId = "99"
                 topicUpdaterMessage = "%playercount% online"
                 topicUpdaterIntervalMinutes = 20
+                channelNameUpdaterCount = 1
+                channelNameUpdater1ChannelId = "100"
+                channelNameUpdater1Message = "%playercount% players"
+                channelNameUpdater1ShutdownMessage = "offline"
+                channelNameUpdater1UpdateInterval = 10
                 syncMinecraftToDiscordChat = false
                 syncDiscordToMinecraftChat = true
                 syncPlayerJoin = false
@@ -127,6 +146,9 @@ final class BridgeConfigFileTest {
         assertEquals("99", loaded.topicUpdaterChannelId());
         assertEquals("%playercount% online", loaded.topicUpdaterMessage());
         assertEquals(20, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(1, loaded.channelNameUpdaters().size());
+        assertEquals("100", loaded.channelNameUpdaters().get(0).channelId());
+        assertEquals("%playercount% players", loaded.channelNameUpdaters().get(0).message());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals(false, loaded.syncPlayerDeath());
@@ -136,6 +158,7 @@ final class BridgeConfigFileTest {
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("mode = \"selfbot\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("webhookDelivery = true"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("topicUpdaterEnabled = true"));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("channelNameUpdater1ChannelId = \"100\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncMinecraftToDiscordChat = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerJoin = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerAdvancement = false"));

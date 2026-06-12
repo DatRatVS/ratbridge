@@ -35,6 +35,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 - **Player Event Sync**: Sends player join, leave, death, and advancement events to Discord.
 - **Server Lifecycle Sync**: Sends server start and shutdown messages to Discord.
 - **Channel Topic Updater**: Updates a Discord channel topic with server status placeholders.
+- **Channel Name Updaters**: Updates one or more Discord channel names with server status placeholders.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
 - **Selfbot Mode**: Optional DM and Group DM polling mode using a user token and channel id.
 - **Runtime Reload**: Adds `/ratbridge reload` for OPs to reload config and reconnect Discord without restarting the server.
@@ -125,6 +126,22 @@ topicUpdaterShutdownMessage = "Server is offline"
 
 # Minutes between topic updates. Minimum: 10, to avoid Discord rate limits.
 topicUpdaterIntervalMinutes = 10
+
+# Discord channel name updaters. Bot mode only; requires Manage Channels permission.
+# Set channelNameUpdaterCount to how many numbered entries should be used.
+# Minimum update interval is 10 minutes because Discord rate-limits channel renames.
+channelNameUpdaterCount = 0
+
+# Example:
+# channelNameUpdaterCount = 2
+# channelNameUpdater1ChannelId = "000000000000000000"
+# channelNameUpdater1Message = "%playercount% players online"
+# channelNameUpdater1ShutdownMessage = "Server is offline"
+# channelNameUpdater1UpdateInterval = 10
+# channelNameUpdater2ChannelId = "000000000000000000"
+# channelNameUpdater2Message = "TPS %tps%"
+# channelNameUpdater2ShutdownMessage = "Server is offline"
+# channelNameUpdater2UpdateInterval = 10
 ```
 
 `messages.toml` holds listener toggles and editable message text:
@@ -233,9 +250,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.5.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.5.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.5.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.6.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.6.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.6.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

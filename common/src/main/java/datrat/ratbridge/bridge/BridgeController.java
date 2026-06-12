@@ -16,6 +16,7 @@ public final class BridgeController {
     private MinecraftMessageSink minecraftSink;
     private ServerStatusProvider statusProvider = ServerStatusProvider.empty();
     private ScheduledExecutorService topicUpdater;
+    private ScheduledExecutorService channelNameUpdater;
     private long startedAtMillis;
 
     public synchronized void start(BridgeConfig config, MinecraftMessageSink minecraftSink, Supplier<DiscordBridgeClient> clientFactory) throws Exception {
@@ -37,11 +38,13 @@ public final class BridgeController {
         this.startedAtMillis = System.currentTimeMillis();
         running.set(true);
         startTopicUpdater();
+        startChannelNameUpdater();
     }
 
     public synchronized void stop() {
         running.set(false);
         stopTopicUpdater();
+        stopChannelNameUpdater();
         if (client != null) {
             client.close();
             client = null;
@@ -134,6 +137,7 @@ public final class BridgeController {
             currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
         }
         updateShutdownTopic(current, currentClient);
+        updateShutdownChannelNames(current, currentClient);
     }
 
     private void sendEvent(String eventMessage) {
@@ -215,6 +219,69 @@ public final class BridgeController {
 
     private String buildTopic(String template) {
         long uptimeMillis = startedAtMillis == 0L ? 0L : Math.max(0L, System.currentTimeMillis() - startedAtMillis);
+        return buildStatusMessage(template, uptimeMillis);
+    }
+
+    private synchronized void startChannelNameUpdater() {
+        BridgeConfig current = config;
+        if (current == null || current.channelNameUpdaters().isEmpty()) {
+            return;
+        }
+        channelNameUpdater = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "RatBridge-Channel-Name-Updater");
+            thread.setDaemon(true);
+            return thread;
+        });
+        for (ChannelNameUpdaterConfig updater : current.channelNameUpdaters()) {
+            long intervalMinutes = Math.max(10, updater.updateIntervalMinutes());
+            channelNameUpdater.scheduleWithFixedDelay(
+                    () -> updateChannelNameSafely(updater),
+                    0L,
+                    intervalMinutes,
+                    TimeUnit.MINUTES
+            );
+        }
+    }
+
+    private synchronized void stopChannelNameUpdater() {
+        if (channelNameUpdater != null) {
+            channelNameUpdater.shutdownNow();
+            channelNameUpdater = null;
+        }
+    }
+
+    private void updateChannelNameSafely(ChannelNameUpdaterConfig updater) {
+        try {
+            BridgeConfig current = config;
+            DiscordBridgeClient currentClient = client;
+            if (!isRunning() || current == null || currentClient == null || !current.channelNameUpdaters().contains(updater)) {
+                return;
+            }
+            currentClient.updateChannelName(updater.channelId(), buildStatusMessage(updater.message()));
+        } catch (Exception ignored) {
+            // Discord client implementations log REST failures; the scheduler must keep running.
+        }
+    }
+
+    private void updateShutdownChannelNames(BridgeConfig current, DiscordBridgeClient currentClient) {
+        for (ChannelNameUpdaterConfig updater : current.channelNameUpdaters()) {
+            if (!BridgeConfig.hasText(updater.shutdownMessage())) {
+                continue;
+            }
+            currentClient.updateChannelNameBlocking(
+                    updater.channelId(),
+                    buildStatusMessage(updater.shutdownMessage()),
+                    Duration.ofSeconds(5)
+            );
+        }
+    }
+
+    private String buildStatusMessage(String template) {
+        long uptimeMillis = startedAtMillis == 0L ? 0L : Math.max(0L, System.currentTimeMillis() - startedAtMillis);
+        return buildStatusMessage(template, uptimeMillis);
+    }
+
+    private String buildStatusMessage(String template, long uptimeMillis) {
         return TopicTemplateFormatter.format(template, statusProvider.snapshot(uptimeMillis));
     }
 }

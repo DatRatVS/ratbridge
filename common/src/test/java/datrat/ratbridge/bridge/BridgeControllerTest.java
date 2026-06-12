@@ -2,6 +2,7 @@ package datrat.ratbridge.bridge;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -105,6 +106,34 @@ final class BridgeControllerTest {
         controller.stop();
     }
 
+    @Test
+    void channelNameUpdaterFormatsStatusOnStartAndShutdown() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        BridgeConfig config = channelNameConfig();
+        ServerStatusProvider statusProvider = uptimeMillis -> new ServerStatusSnapshot(
+                5,
+                20,
+                12,
+                "Rat SMP",
+                "Forge-1.20.1",
+                19.5,
+                600_000L
+        );
+
+        controller.start(config, message -> { }, statusProvider, () -> client);
+
+        assertEquals("name-channel", client.nameChannelId.get(1, TimeUnit.SECONDS));
+        assertEquals("5 players online", client.name.get(1, TimeUnit.SECONDS));
+
+        client.resetNameFutures();
+        controller.onServerStopping();
+
+        assertEquals("name-channel", client.nameChannelId.get(1, TimeUnit.SECONDS));
+        assertEquals("Server is offline", client.name.get(1, TimeUnit.SECONDS));
+        controller.stop();
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
         return config(webhookDelivery, true, true);
     }
@@ -113,6 +142,7 @@ final class BridgeControllerTest {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 webhookDelivery, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(),
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
                 750,
@@ -124,6 +154,19 @@ final class BridgeControllerTest {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 false, "RatBridge",
                 true, "topic-channel", "%playercount%/%playermax% online | TPS %tps% | %motd% | up %uptimemins%m", "Offline after %uptimemins%m with %playercount% players cached", 10,
+                List.of(),
+                true, true, true,
+                true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static BridgeConfig channelNameConfig() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(new ChannelNameUpdaterConfig("name-channel", "%playercount% players online", "Server is offline", 10)),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -138,6 +181,8 @@ final class BridgeControllerTest {
         private Consumer<DiscordInboundMessage> inboundConsumer;
         private CompletableFuture<String> topicChannelId = new CompletableFuture<>();
         private CompletableFuture<String> topic = new CompletableFuture<>();
+        private CompletableFuture<String> nameChannelId = new CompletableFuture<>();
+        private CompletableFuture<String> name = new CompletableFuture<>();
 
         @Override
         public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) {
@@ -168,9 +213,21 @@ final class BridgeControllerTest {
             return CompletableFuture.completedFuture(null);
         }
 
+        @Override
+        public CompletableFuture<Void> updateChannelName(String channelId, String name) {
+            this.nameChannelId.complete(channelId);
+            this.name.complete(name);
+            return CompletableFuture.completedFuture(null);
+        }
+
         private void resetTopicFutures() {
             topicChannelId = new CompletableFuture<>();
             topic = new CompletableFuture<>();
+        }
+
+        private void resetNameFutures() {
+            nameChannelId = new CompletableFuture<>();
+            name = new CompletableFuture<>();
         }
 
         @Override

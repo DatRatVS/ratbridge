@@ -75,7 +75,7 @@ D - Channel topic changer/writer: ✅
     ```
       If there are other placeholders that you find cool to like feel free to add it!
 
-E - Channel name changer/writer (similar to D)
+E - Channel name changer/writer (similar to D): ✅
     . Instead of the topic, it changes the channel's name entirely supporting placeholders
       So a discord server could have a group session with voice channels having it's names updated
       To show cool informations. 

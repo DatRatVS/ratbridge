@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.WebhookClient;
 import net.dv8tion.jda.api.entities.WebhookType;
 import net.dv8tion.jda.api.entities.channel.attribute.IWebhookContainer;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -125,6 +126,33 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<Void> updateChannelName(String channelId, String name) {
+        if (jda == null || !BridgeConfig.hasText(channelId)) {
+            return CompletableFuture.completedFuture(null);
+        }
+        GuildChannel channel = jda.getChannelById(GuildChannel.class, channelId);
+        if (channel == null) {
+            LOGGER.warn("Discord channel not found for name updater: {}", channelId);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        String boundedName = boundedChannelName(name);
+        if (boundedName.equals(channel.getName())) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        channel.getManager().setName(boundedName).queue(
+                ignored -> future.complete(null),
+                error -> {
+                    LOGGER.warn("Failed to update Discord channel name", error);
+                    future.complete(null);
+                }
+        );
+        return future;
+    }
+
+    @Override
     public void close() {
         if (jda != null) {
             jda.shutdown();
@@ -194,5 +222,11 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         }
         int maxLength = StandardGuildMessageChannel.MAX_TOPIC_LENGTH;
         return topic.length() <= maxLength ? topic : topic.substring(0, maxLength);
+    }
+
+    private static String boundedChannelName(String name) {
+        String fallback = name == null || name.isBlank() ? "ratbridge" : name.trim();
+        int maxLength = net.dv8tion.jda.api.entities.channel.Channel.MAX_NAME_LENGTH;
+        return fallback.length() <= maxLength ? fallback : fallback.substring(0, maxLength);
     }
 }

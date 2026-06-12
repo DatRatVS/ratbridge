@@ -2,6 +2,7 @@ package datrat.ratbridge.bridge;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -54,6 +55,7 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 250,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -70,6 +72,7 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 true, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -86,6 +89,7 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -103,6 +107,7 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
                 false, "RatBridge",
                 true, "", "Players: %playercount%/%playermax%", "Server is offline", 5,
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -115,10 +120,31 @@ final class BridgeConfigTest {
         assertTrue(result.errors().contains("topicUpdaterIntervalMinutes must be at least 10 to respect Discord rate limits"));
     }
 
+    @Test
+    void channelNameUpdatersRequireBotModeAndRateLimitSafeInterval() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 5)),
+                true, true, true, true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("channel name updaters require mode = 'bot'; Discord guild channels cannot be managed by selfbot mode"));
+        assertTrue(result.errors().contains("channelNameUpdater1ChannelId is required"));
+        assertTrue(result.errors().contains("channelNameUpdater1Message is required"));
+        assertTrue(result.errors().contains("channelNameUpdater1UpdateInterval must be at least 10 to respect Discord rate limits"));
+    }
+
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 10,
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",

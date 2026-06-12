@@ -17,6 +17,10 @@ public interface DiscordBridgeClient extends AutoCloseable {
         return CompletableFuture.completedFuture(null);
     }
 
+    default CompletableFuture<Void> updateChannelName(String channelId, String name) {
+        return CompletableFuture.completedFuture(null);
+    }
+
     default void sendMessageBlocking(String message, Duration timeout) {
         try {
             sendMessage(message).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -28,6 +32,14 @@ public interface DiscordBridgeClient extends AutoCloseable {
     default void updateChannelTopicBlocking(String channelId, String topic, Duration timeout) {
         try {
             updateChannelTopic(channelId, topic).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (Exception ignored) {
+            // Shutdown is best-effort; callers should not fail Minecraft server stop.
+        }
+    }
+
+    default void updateChannelNameBlocking(String channelId, String name, Duration timeout) {
+        try {
+            updateChannelName(channelId, name).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
         } catch (Exception ignored) {
             // Shutdown is best-effort; callers should not fail Minecraft server stop.
         }
