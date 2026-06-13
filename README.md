@@ -138,20 +138,25 @@ topicUpdaterIntervalMinutes = 6
 
 ```toml
 # Discord channel name updaters. Bot mode only; requires Manage Channels permission.
-# Set channelNameUpdaterCount to how many numbered entries should be used.
+# Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.
 # Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.
-channelNameUpdaterCount = 0
+# ChannelId: Discord channel ID to rename.
+# Message: Channel name while the Minecraft server is online.
+# ShutdownMessage: Channel name applied while the Minecraft server is stopping.
+# UpdateInterval: Minutes between channel name updates.
 
 # Example:
-# channelNameUpdaterCount = 2
-# channelNameUpdater1ChannelId = "000000000000000000"
-# channelNameUpdater1Message = "%playercount% players online"
-# channelNameUpdater1ShutdownMessage = "Server is offline"
-# channelNameUpdater1UpdateInterval = 6
-# channelNameUpdater2ChannelId = "000000000000000000"
-# channelNameUpdater2Message = "TPS %tps%"
-# channelNameUpdater2ShutdownMessage = "Server is offline"
-# channelNameUpdater2UpdateInterval = 6
+# [[ChannelUpdater]]
+# ChannelId = "000000000000000000"
+# Message = "%playercount% players online"
+# ShutdownMessage = "Server is offline"
+# UpdateInterval = 6
+#
+# [[ChannelUpdater]]
+# ChannelId = "000000000000000000"
+# Message = "TPS %tps%"
+# ShutdownMessage = "Server is offline"
+# UpdateInterval = 6
 ```
 
 `messages.toml` holds listener toggles and editable message text:

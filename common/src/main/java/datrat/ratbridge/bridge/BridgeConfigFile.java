@@ -44,7 +44,7 @@ public final class BridgeConfigFile {
         values.putAll(configValues);
         values.putAll(readValues(messagesPath));
         values.putAll(readValues(topicUpdaterPath));
-        values.putAll(readValues(channelUpdatersPath));
+        values.putAll(readValuesWithChannelUpdaters(channelUpdatersPath));
         return fromValues(values);
     }
 
@@ -53,7 +53,7 @@ public final class BridgeConfigFile {
             writeDefaultLegacy(path);
         }
 
-        return fromValues(readValues(path));
+        return fromValues(readValuesWithChannelUpdaters(path));
     }
 
     public static void writeDefaultConfig(Path path, Map<String, String> seedValues) throws IOException {
@@ -146,6 +146,54 @@ public final class BridgeConfigFile {
             String[] parts = stripped.split("=", 2);
             values.put(parts[0].trim(), unquote(parts[1].trim()));
         }
+        return values;
+    }
+
+    private static Map<String, String> readValuesWithChannelUpdaters(Path path) throws IOException {
+        Map<String, String> values = new LinkedHashMap<>();
+        List<Map<String, String>> updaters = new ArrayList<>();
+        Map<String, String> currentUpdater = null;
+
+        for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+            String stripped = stripComment(line).trim();
+            if (stripped.isEmpty()) {
+                continue;
+            }
+            if ("[[ChannelUpdater]]".equals(stripped)) {
+                currentUpdater = new LinkedHashMap<>();
+                updaters.add(currentUpdater);
+                continue;
+            }
+            if (stripped.startsWith("[")) {
+                currentUpdater = null;
+                continue;
+            }
+            if (!stripped.contains("=")) {
+                continue;
+            }
+
+            String[] parts = stripped.split("=", 2);
+            String key = parts[0].trim();
+            String value = unquote(parts[1].trim());
+            if (currentUpdater == null) {
+                values.put(key, value);
+            } else {
+                currentUpdater.put(key, value);
+            }
+        }
+
+        if (!updaters.isEmpty()) {
+            values.put("channelNameUpdaterCount", Integer.toString(updaters.size()));
+            for (int index = 0; index < updaters.size(); index++) {
+                Map<String, String> updater = updaters.get(index);
+                String prefix = "channelNameUpdater" + (index + 1);
+                values.put(prefix + "ChannelId", firstValue(updater, "ChannelId", "channelId", "channelID"));
+                values.put(prefix + "Message", firstValue(updater, "Message", "message"));
+                values.put(prefix + "ShutdownMessage", firstValue(updater, "ShutdownMessage", "shutdownMessage"));
+                values.put(prefix + "UpdateInterval", firstValue(updater, "UpdateInterval", "updateInterval"));
+            }
+        }
+
         return values;
     }
 
@@ -250,20 +298,25 @@ public final class BridgeConfigFile {
                 
                 """
                 + "# Discord channel name updaters. Bot mode only; the bot needs Manage Channels permission.\n"
-                + "# Set channelNameUpdaterCount to how many numbered entries you want to use.\n"
+                + "# Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.\n"
                 + "# Minimum update interval is 5 minutes; 6+ is recommended because Discord heavily rate-limits channel renames.\n"
+                + "# ChannelId: Discord channel ID to rename.\n"
+                + "# Message: Channel name while the Minecraft server is online.\n"
+                + "# ShutdownMessage: Channel name applied while the Minecraft server is stopping.\n"
+                + "# UpdateInterval: Minutes between channel name updates.\n"
                 + "# Example:\n"
-                + "# channelNameUpdaterCount = 2\n"
-                + "# channelNameUpdater1ChannelId = \"000000000000000000\"\n"
-                + "# channelNameUpdater1Message = \"%playercount% players online\"\n"
-                + "# channelNameUpdater1ShutdownMessage = \"Server is offline\"\n"
-                + "# channelNameUpdater1UpdateInterval = 6\n"
-                + "# channelNameUpdater2ChannelId = \"000000000000000000\"\n"
-                + "# channelNameUpdater2Message = \"TPS %tps%\"\n"
-                + "# channelNameUpdater2ShutdownMessage = \"Server is offline\"\n"
-                + "# channelNameUpdater2UpdateInterval = 6\n"
-                + "channelNameUpdaterCount = " + integer(values, "channelNameUpdaterCount", 0) + "\n"
-                + channelNameUpdaterEntriesToml(values);
+                + "# [[ChannelUpdater]]\n"
+                + "# ChannelId = \"000000000000000000\"\n"
+                + "# Message = \"%playercount% players online\"\n"
+                + "# ShutdownMessage = \"Server is offline\"\n"
+                + "# UpdateInterval = 6\n"
+                + "#\n"
+                + "# [[ChannelUpdater]]\n"
+                + "# ChannelId = \"000000000000000000\"\n"
+                + "# Message = \"TPS %tps%\"\n"
+                + "# ShutdownMessage = \"Server is offline\"\n"
+                + "# UpdateInterval = 6\n"
+                + channelNameUpdaterTablesToml(values);
     }
 
     private static String defaultMessagesToml(Map<String, String> values) {
@@ -335,6 +388,16 @@ public final class BridgeConfigFile {
         return values.getOrDefault(key, fallback);
     }
 
+    private static String firstValue(Map<String, String> values, String... keys) {
+        for (String key : keys) {
+            String value = values.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
+        return "";
+    }
+
     private static boolean bool(Map<String, String> values, String key, boolean fallback) {
         String value = values.get(key);
         return value == null ? fallback : Boolean.parseBoolean(value);
@@ -382,15 +445,17 @@ public final class BridgeConfigFile {
         return List.copyOf(updaters);
     }
 
-    private static String channelNameUpdaterEntriesToml(Map<String, String> values) {
+    private static String channelNameUpdaterTablesToml(Map<String, String> values) {
         int count = Math.max(0, integer(values, "channelNameUpdaterCount", 0));
         StringBuilder builder = new StringBuilder();
         for (int index = 1; index <= count; index++) {
             String prefix = "channelNameUpdater" + index;
-            builder.append(prefix).append("ChannelId = ").append(quote(string(values, prefix + "ChannelId", ""))).append('\n');
-            builder.append(prefix).append("Message = ").append(quote(string(values, prefix + "Message", "%playercount% players online"))).append('\n');
-            builder.append(prefix).append("ShutdownMessage = ").append(quote(string(values, prefix + "ShutdownMessage", "Server is offline"))).append('\n');
-            builder.append(prefix).append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 6)).append('\n');
+            builder.append('\n');
+            builder.append("[[ChannelUpdater]]\n");
+            builder.append("ChannelId = ").append(quote(string(values, prefix + "ChannelId", ""))).append('\n');
+            builder.append("Message = ").append(quote(string(values, prefix + "Message", "%playercount% players online"))).append('\n');
+            builder.append("ShutdownMessage = ").append(quote(string(values, prefix + "ShutdownMessage", "Server is offline"))).append('\n');
+            builder.append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 6)).append('\n');
         }
         return builder.toString();
     }
