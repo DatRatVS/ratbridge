@@ -21,6 +21,8 @@ final class BridgeConfigFileTest {
 
         assertTrue(Files.exists(configDir.resolve("config.toml")));
         assertTrue(Files.exists(configDir.resolve("messages.toml")));
+        assertTrue(Files.exists(configDir.resolve("topic-updater.toml")));
+        assertTrue(Files.exists(configDir.resolve("channel-updaters.toml")));
         assertEquals("discord", loaded.client());
         assertEquals("bot", loaded.mode());
         assertEquals("RATBRIDGE_DISCORD_TOKEN", loaded.tokenEnv());
@@ -57,11 +59,15 @@ final class BridgeConfigFileTest {
                 selfbotPollIntervalMillis = 500
                 webhookDelivery = true
                 webhookName = "RatBridge Chat"
+                """);
+        Files.writeString(configDir.resolve("topic-updater.toml"), """
                 topicUpdaterEnabled = true
                 topicUpdaterChannelId = "99"
                 topicUpdaterMessage = "%playercount% online"
                 topicUpdaterShutdownMessage = "offline"
                 topicUpdaterIntervalMinutes = 15
+                """);
+        Files.writeString(configDir.resolve("channel-updaters.toml"), """
                 channelNameUpdaterCount = 2
                 channelNameUpdater1ChannelId = "100"
                 channelNameUpdater1Message = "%playercount% players"
@@ -104,6 +110,42 @@ final class BridgeConfigFileTest {
         assertEquals("{player} entrou no jogo", loaded.playerJoinMessage());
         assertEquals(false, loaded.syncPlayerDeath());
         assertEquals("{player}: {advancement} - {description}", loaded.playerAdvancementMessage());
+    }
+
+    @Test
+    void migratesUpdaterValuesFromOldSplitConfigToml() throws Exception {
+        Path configDir = tempDir.resolve("ratbridge");
+        Files.createDirectories(configDir);
+        Files.writeString(configDir.resolve("config.toml"), """
+                mode = "bot"
+                token = "abc"
+                serverId = "24"
+                channelId = "42"
+                topicUpdaterEnabled = true
+                topicUpdaterChannelId = "99"
+                topicUpdaterMessage = "%playercount% online"
+                topicUpdaterShutdownMessage = "offline"
+                topicUpdaterIntervalMinutes = 20
+                channelNameUpdaterCount = 1
+                channelNameUpdater1ChannelId = "100"
+                channelNameUpdater1Message = "%playercount% players"
+                channelNameUpdater1ShutdownMessage = "offline"
+                channelNameUpdater1UpdateInterval = 6
+                """);
+        Files.writeString(configDir.resolve("messages.toml"), "");
+
+        BridgeConfig loaded = BridgeConfigFile.loadSplit(configDir);
+
+        assertEquals(true, loaded.topicUpdaterEnabled());
+        assertEquals("99", loaded.topicUpdaterChannelId());
+        assertEquals("%playercount% online", loaded.topicUpdaterMessage());
+        assertEquals(20, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(1, loaded.channelNameUpdaters().size());
+        assertEquals("100", loaded.channelNameUpdaters().get(0).channelId());
+        assertEquals("%playercount% players", loaded.channelNameUpdaters().get(0).message());
+        assertTrue(Files.readString(configDir.resolve("topic-updater.toml")).contains("topicUpdaterEnabled = true"));
+        assertTrue(Files.readString(configDir.resolve("topic-updater.toml")).contains("topicUpdaterChannelId = \"99\""));
+        assertTrue(Files.readString(configDir.resolve("channel-updaters.toml")).contains("channelNameUpdater1ChannelId = \"100\""));
     }
 
     @Test
@@ -157,8 +199,9 @@ final class BridgeConfigFileTest {
         assertEquals("{player} desbloqueou {advancement}", loaded.playerAdvancementMessage());
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("mode = \"selfbot\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("webhookDelivery = true"));
-        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("topicUpdaterEnabled = true"));
-        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("config.toml")).contains("channelNameUpdater1ChannelId = \"100\""));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("topic-updater.toml")).contains("topicUpdaterEnabled = true"));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("topic-updater.toml")).contains("topicUpdaterChannelId = \"99\""));
+        assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("channel-updaters.toml")).contains("channelNameUpdater1ChannelId = \"100\""));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncMinecraftToDiscordChat = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerJoin = false"));
         assertTrue(Files.readString(tempDir.resolve("ratbridge").resolve("messages.toml")).contains("syncPlayerAdvancement = false"));

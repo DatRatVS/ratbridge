@@ -129,3 +129,6 @@ F - Commands
         (Case has online players: `**%playercount% online player[s]:** player, player, player`)
         (Case no online players: `**No online players.**`)
         . These messages should be editable on messages.toml with placeholder support.
+
+L - Put channel and topic updaters in their own .toml files: ✅
+  . Self explanatory

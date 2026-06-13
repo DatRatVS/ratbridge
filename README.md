@@ -69,6 +69,8 @@ RatBridge generates:
 ```text
 config/ratbridge/config.toml
 config/ratbridge/messages.toml
+config/ratbridge/topic-updater.toml
+config/ratbridge/channel-updaters.toml
 ```
 
 `config.toml` holds connection/client settings:
@@ -109,7 +111,11 @@ webhookDelivery = false
 
 # Webhook name RatBridge creates/reuses in the Discord channel.
 webhookName = "RatBridge"
+```
 
+`topic-updater.toml` holds the optional Discord channel topic updater:
+
+```toml
 # Discord channel topic updater. Bot mode only; requires Manage Channels permission.
 topicUpdaterEnabled = false
 
@@ -126,7 +132,11 @@ topicUpdaterShutdownMessage = "Server is offline"
 
 # Minutes between topic updates. Minimum: 5; 6+ is recommended to avoid Discord rate limits.
 topicUpdaterIntervalMinutes = 6
+```
 
+`channel-updaters.toml` holds optional Discord channel name updaters:
+
+```toml
 # Discord channel name updaters. Bot mode only; requires Manage Channels permission.
 # Set channelNameUpdaterCount to how many numbered entries should be used.
 # Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.

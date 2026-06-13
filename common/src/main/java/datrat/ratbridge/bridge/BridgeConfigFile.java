@@ -16,6 +16,8 @@ public final class BridgeConfigFile {
     public static BridgeConfig loadSplit(Path directory) throws IOException {
         Path configPath = directory.resolve("config.toml");
         Path messagesPath = directory.resolve("messages.toml");
+        Path topicUpdaterPath = directory.resolve("topic-updater.toml");
+        Path channelUpdatersPath = directory.resolve("channel-updaters.toml");
         Path legacyPath = directory.getParent() == null ? null : directory.getParent().resolve("ratbridge.toml");
         Map<String, String> legacyValues = legacyPath != null && Files.exists(legacyPath) ? readValues(legacyPath) : Map.of();
 
@@ -26,9 +28,23 @@ public final class BridgeConfigFile {
             writeDefaultMessages(messagesPath, legacyValues);
         }
 
+        Map<String, String> configValues = readValues(configPath);
+        Map<String, String> updaterSeedValues = new LinkedHashMap<>();
+        updaterSeedValues.putAll(legacyValues);
+        updaterSeedValues.putAll(configValues);
+
+        if (Files.notExists(topicUpdaterPath)) {
+            writeDefaultTopicUpdater(topicUpdaterPath, updaterSeedValues);
+        }
+        if (Files.notExists(channelUpdatersPath)) {
+            writeDefaultChannelUpdaters(channelUpdatersPath, updaterSeedValues);
+        }
+
         Map<String, String> values = new LinkedHashMap<>();
-        values.putAll(readValues(configPath));
+        values.putAll(configValues);
         values.putAll(readValues(messagesPath));
+        values.putAll(readValues(topicUpdaterPath));
+        values.putAll(readValues(channelUpdatersPath));
         return fromValues(values);
     }
 
@@ -48,6 +64,14 @@ public final class BridgeConfigFile {
         write(path, defaultMessagesToml(seedValues));
     }
 
+    public static void writeDefaultTopicUpdater(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultTopicUpdaterToml(seedValues));
+    }
+
+    public static void writeDefaultChannelUpdaters(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultChannelUpdatersToml(seedValues));
+    }
+
     public static void writeDefaultLegacy(Path path) throws IOException {
         write(path, defaultLegacyToml());
     }
@@ -60,8 +84,16 @@ public final class BridgeConfigFile {
         return defaultMessagesToml(Map.of());
     }
 
+    public static String defaultTopicUpdaterToml() {
+        return defaultTopicUpdaterToml(Map.of());
+    }
+
+    public static String defaultChannelUpdatersToml() {
+        return defaultChannelUpdatersToml(Map.of());
+    }
+
     public static String defaultLegacyToml() {
-        return defaultConfigToml() + "\n" + defaultMessagesToml();
+        return defaultConfigToml() + "\n" + defaultTopicUpdaterToml() + "\n" + defaultChannelUpdatersToml() + "\n" + defaultMessagesToml();
     }
 
     private static BridgeConfig fromValues(Map<String, String> values) {
@@ -181,7 +213,15 @@ public final class BridgeConfigFile {
                 + "\n"
                 + "# Name of the webhook RatBridge creates/reuses in the configured Discord channel.\n"
                 + "webhookName = " + quote(string(values, "webhookName", "RatBridge")) + "\n"
-                + "\n"
+                + "\n";
+    }
+
+    private static String defaultTopicUpdaterToml(Map<String, String> values) {
+        return """
+                # RatBridge Discord channel topic updater.
+                # This file controls one optional updater that edits a Discord channel topic with server status.
+                
+                """
                 + "# Discord channel topic updater. Bot mode only; selfbot mode cannot edit guild channel topics.\n"
                 + "# The bot needs permission to manage channels in the target Discord channel.\n"
                 + "topicUpdaterEnabled = " + boolString(values, "topicUpdaterEnabled", false) + "\n"
@@ -200,7 +240,15 @@ public final class BridgeConfigFile {
                 + "\n"
                 + "# Minutes between topic updates. Minimum: 5; 6+ is recommended to avoid Discord rate limits.\n"
                 + "topicUpdaterIntervalMinutes = " + integer(values, "topicUpdaterIntervalMinutes", 6) + "\n"
-                + "\n"
+                + "\n";
+    }
+
+    private static String defaultChannelUpdatersToml(Map<String, String> values) {
+        return """
+                # RatBridge Discord channel name updaters.
+                # This file controls optional updaters that rename Discord channels with server status.
+                
+                """
                 + "# Discord channel name updaters. Bot mode only; the bot needs Manage Channels permission.\n"
                 + "# Set channelNameUpdaterCount to how many numbered entries you want to use.\n"
                 + "# Minimum update interval is 5 minutes; 6+ is recommended because Discord heavily rate-limits channel renames.\n"
