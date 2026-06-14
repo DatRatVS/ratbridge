@@ -79,6 +79,18 @@ final class BridgeControllerTest {
     }
 
     @Test
+    void discordReplyUsesReplyFormatInMinecraft() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        CapturingMinecraftSink sink = new CapturingMinecraftSink();
+
+        controller.start(config(false), sink, () -> client);
+        client.receive(new DiscordInboundMessage("Alex", "that one", "Steve"));
+
+        assertEquals("[Discord] <Alex> replied to <Steve>: that one", sink.message);
+    }
+
+    @Test
     void topicUpdaterFormatsStatusOnStartAndShutdown() throws Exception {
         BridgeController controller = new BridgeController();
         FakeDiscordClient client = new FakeDiscordClient();
@@ -174,7 +186,7 @@ final class BridgeControllerTest {
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 
@@ -189,7 +201,7 @@ final class BridgeControllerTest {
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 
@@ -204,7 +216,7 @@ final class BridgeControllerTest {
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 
@@ -219,7 +231,7 @@ final class BridgeControllerTest {
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 

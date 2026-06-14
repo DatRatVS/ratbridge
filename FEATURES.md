@@ -130,6 +130,11 @@ F - Commands
         (Case no online players: `**No online players.**`)
         . These messages should be editable on messages.toml with placeholder support.
 
+G - Discord message reply to minecraft: ✅
+    . Show in discord that a message from said user was replied to
+    Probably like: `[Discord] {@messager} replied to {@replied-messager}: {message}`
+    and editable in messages.toml with placeholder support.
+
 K - Discord bot online status and status text: ✅
   K1 - Allow the user to personalize what says in the bot's PLAYING
   (Support all the modes, PLAYING, LISTENING, WATCHING, STREAMING... etc.)

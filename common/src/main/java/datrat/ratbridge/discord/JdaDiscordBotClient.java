@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.WebhookClient;
 import net.dv8tion.jda.api.entities.WebhookType;
@@ -220,8 +221,33 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
             content = content.isBlank() ? attachments : content + " " + attachments;
         }
         if (!content.isBlank()) {
-            inboundConsumer.accept(new DiscordInboundMessage(event.getAuthor().getEffectiveName(), content));
+            acceptInboundMessage(inboundConsumer, event, message, content);
         }
+    }
+
+    private static void acceptInboundMessage(
+            Consumer<DiscordInboundMessage> inboundConsumer,
+            MessageReceivedEvent event,
+            Message message,
+            String content
+    ) {
+        String author = event.getAuthor().getEffectiveName();
+        Message referenced = message.getReferencedMessage();
+        if (referenced != null) {
+            inboundConsumer.accept(new DiscordInboundMessage(author, content, referenced.getAuthor().getEffectiveName()));
+            return;
+        }
+
+        MessageReference reference = message.getMessageReference();
+        if (reference == null) {
+            inboundConsumer.accept(new DiscordInboundMessage(author, content));
+            return;
+        }
+
+        reference.resolve().queue(
+                resolved -> inboundConsumer.accept(new DiscordInboundMessage(author, content, resolved.getAuthor().getEffectiveName())),
+                error -> inboundConsumer.accept(new DiscordInboundMessage(author, content))
+        );
     }
 
     private static String webhookUsername(String player) {

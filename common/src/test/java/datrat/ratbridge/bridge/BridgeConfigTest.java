@@ -61,7 +61,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 250,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -81,7 +81,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -101,7 +101,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -122,7 +122,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -143,7 +143,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -166,7 +166,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -185,7 +185,7 @@ final class BridgeConfigTest {
                 List.of(new BotPresenceConfig("invalid", "invalid", "online", "", 10)),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -208,7 +208,7 @@ final class BridgeConfigTest {
                 List.of(new BotPresenceConfig("online", "streaming", "RatBridge", "", 60)),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -228,7 +228,7 @@ final class BridgeConfigTest {
                 List.of(new BotPresenceConfig("invalid", "invalid", "online", "", 1)),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
 
         ValidationResult result = config.validate(emptyEnv());
@@ -246,7 +246,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
-                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 

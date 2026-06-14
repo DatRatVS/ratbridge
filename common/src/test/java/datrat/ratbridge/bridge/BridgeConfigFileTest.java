@@ -41,6 +41,7 @@ final class BridgeConfigFileTest {
         assertEquals(0, loaded.botPresenceUpdates().size());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
+        assertEquals("[Discord] <{author}> replied to <{replyAuthor}>: {message}", loaded.discordReplyToMinecraftFormat());
         assertEquals(true, loaded.syncPlayerDeath());
         assertEquals(true, loaded.syncPlayerAdvancement());
         assertEquals("{message}", loaded.playerDeathMessage());
@@ -104,6 +105,7 @@ final class BridgeConfigFileTest {
                 """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
+                discordReplyToMinecraftFormat = "[Discord] {author} -> {replyAuthor}: {message}"
                 syncMinecraftToDiscordChat = false
                 syncDiscordToMinecraftChat = true
                 playerJoinMessage = "{player} entrou no jogo"
@@ -140,6 +142,7 @@ final class BridgeConfigFileTest {
         assertEquals("STREAMING", loaded.botPresenceUpdates().get(1).activityType());
         assertEquals("https://twitch.tv/datrat", loaded.botPresenceUpdates().get(1).streamUrl());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
+        assertEquals("[Discord] {author} -> {replyAuthor}: {message}", loaded.discordReplyToMinecraftFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals("{player} entrou no jogo", loaded.playerJoinMessage());

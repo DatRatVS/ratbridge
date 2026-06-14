@@ -191,13 +191,14 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         }
 
         String authorName = author == null ? "Discord" : displayName(author);
-        inboundConsumer.accept(new DiscordInboundMessage(authorName, content));
+        String replyAuthorName = referencedAuthorName(message);
+        inboundConsumer.accept(new DiscordInboundMessage(authorName, content, replyAuthorName));
     }
 
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.8");
+                .header("User-Agent", "RatBridge/0.1.9");
     }
 
     private URI channelUri(String suffix) {
@@ -212,6 +213,15 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         }
         String username = getString(author, "username");
         return username.isBlank() ? "Discord" : username;
+    }
+
+    private static String referencedAuthorName(JsonObject message) {
+        if (message == null || !message.has("referenced_message") || message.get("referenced_message").isJsonNull()) {
+            return "";
+        }
+        JsonObject referenced = message.getAsJsonObject("referenced_message");
+        JsonObject author = referenced.getAsJsonObject("author");
+        return author == null ? "" : displayName(author);
     }
 
     private static String getString(JsonObject object, String key) {

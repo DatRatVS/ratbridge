@@ -37,6 +37,7 @@ public record BridgeConfig(
         int selfbotPollIntervalMillis,
         String minecraftToDiscordFormat,
         String discordToMinecraftFormat,
+        String discordReplyToMinecraftFormat,
         String eventFormat,
         String playerJoinMessage,
         String playerLeaveMessage,

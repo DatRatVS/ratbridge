@@ -142,6 +142,7 @@ public final class BridgeConfigFile {
                 integer(values, "selfbotPollIntervalMillis", 750),
                 string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}"),
                 string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}"),
+                string(values, "discordReplyToMinecraftFormat", "[Discord] <{author}> replied to <{replyAuthor}>: {message}"),
                 string(values, "eventFormat", "[MC] {message}"),
                 string(values, "playerJoinMessage", "{player} joined the game"),
                 string(values, "playerLeaveMessage", "{player} left the game"),
@@ -421,6 +422,10 @@ public final class BridgeConfigFile {
                 + "# discordToMinecraftFormat is used for Discord messages shown in Minecraft.\n"
                 + "# Available placeholders: {author}, {message}\n"
                 + "discordToMinecraftFormat = " + quote(string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}")) + "\n"
+                + "\n"
+                + "# discordReplyToMinecraftFormat is used for Discord reply messages shown in Minecraft.\n"
+                + "# Available placeholders: {author}, {replyAuthor}, {message}\n"
+                + "discordReplyToMinecraftFormat = " + quote(string(values, "discordReplyToMinecraftFormat", "[Discord] <{author}> replied to <{replyAuthor}>: {message}")) + "\n"
                 + "\n"
                 + "# eventFormat wraps server lifecycle and player join/leave messages before sending to Discord.\n"
                 + "# Available placeholders: {message}\n"

@@ -165,8 +165,10 @@ public final class BridgeController {
         if (!isRunning() || current == null || sink == null || !current.syncChat() || !current.syncDiscordToMinecraftChat()) {
             return;
         }
-        String formatted = MessageFormatter.format(current.discordToMinecraftFormat(), Map.of(
+        String template = inbound.hasReplyAuthor() ? current.discordReplyToMinecraftFormat() : current.discordToMinecraftFormat();
+        String formatted = MessageFormatter.format(template, Map.of(
                 "author", inbound.author(),
+                "replyAuthor", inbound.replyAuthor(),
                 "message", inbound.content()
         ));
         sink.sendSystemMessage(formatted);

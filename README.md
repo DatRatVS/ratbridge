@@ -216,6 +216,9 @@ minecraftToDiscordFormat = "[MC] <{player}> {message}"
 # Discord -> Minecraft chat. Placeholders: {author}, {message}
 discordToMinecraftFormat = "[Discord] <{author}> {message}"
 
+# Discord reply -> Minecraft chat. Placeholders: {author}, {replyAuthor}, {message}
+discordReplyToMinecraftFormat = "[Discord] <{author}> replied to <{replyAuthor}>: {message}"
+
 # Wrapper for event messages. Placeholder: {message}
 eventFormat = "[MC] {message}"
 
@@ -299,9 +302,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.8.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.8.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.8.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.9.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.9.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.9.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.
