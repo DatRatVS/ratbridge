@@ -1,10 +1,13 @@
 package datrat.ratbridge.discord;
 
 import datrat.ratbridge.bridge.BridgeConfig;
+import datrat.ratbridge.bridge.BotPresenceConfig;
 import datrat.ratbridge.bridge.DiscordBridgeClient;
 import datrat.ratbridge.bridge.DiscordInboundMessage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.WebhookClient;
@@ -22,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -153,6 +157,22 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<Void> updateBotPresence(BotPresenceConfig presence) {
+        if (jda == null || presence == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        try {
+            jda.getPresence().setPresence(
+                    onlineStatus(presence.onlineStatus()),
+                    activity(presence.activityType(), presence.activity(), presence.streamUrl())
+            );
+        } catch (Exception error) {
+            LOGGER.warn("Failed to update Discord bot presence", error);
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
     public void close() {
         if (jda != null) {
             jda.shutdown();
@@ -228,5 +248,48 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         String fallback = name == null || name.isBlank() ? "ratbridge" : name.trim();
         int maxLength = net.dv8tion.jda.api.entities.channel.Channel.MAX_NAME_LENGTH;
         return fallback.length() <= maxLength ? fallback : fallback.substring(0, maxLength);
+    }
+
+    private static OnlineStatus onlineStatus(String value) {
+        return switch (normalize(value)) {
+            case "idle", "away" -> OnlineStatus.IDLE;
+            case "dnd", "do_not_disturb" -> OnlineStatus.DO_NOT_DISTURB;
+            case "invisible" -> OnlineStatus.INVISIBLE;
+            default -> OnlineStatus.ONLINE;
+        };
+    }
+
+    private static Activity activity(String type, String activity, String streamUrl) {
+        if (!BridgeConfig.hasText(activity)) {
+            return null;
+        }
+
+        String boundedActivity = boundedActivity(activity);
+        return switch (normalize(type)) {
+            case "listening" -> Activity.listening(boundedActivity);
+            case "watching" -> Activity.watching(boundedActivity);
+            case "streaming" -> streamingActivity(boundedActivity, streamUrl);
+            case "competing" -> Activity.competing(boundedActivity);
+            case "custom", "custom_status" -> Activity.customStatus(boundedActivity);
+            default -> Activity.playing(boundedActivity);
+        };
+    }
+
+    private static Activity streamingActivity(String activity, String streamUrl) {
+        if (!BridgeConfig.hasText(streamUrl) || !Activity.isValidStreamingUrl(streamUrl.trim())) {
+            LOGGER.warn("Invalid Discord streaming activity URL; falling back to PLAYING activity");
+            return Activity.playing(activity);
+        }
+        return Activity.streaming(activity, streamUrl.trim());
+    }
+
+    private static String boundedActivity(String activity) {
+        String trimmed = activity.trim();
+        int maxLength = Activity.MAX_ACTIVITY_NAME_LENGTH;
+        return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }

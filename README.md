@@ -36,6 +36,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 - **Server Lifecycle Sync**: Sends server start and shutdown messages to Discord.
 - **Channel Topic Updater**: Updates a Discord channel topic with server status placeholders.
 - **Channel Name Updaters**: Updates one or more Discord channel names with server status placeholders.
+- **Bot Presence Rotation**: Updates Discord bot online status and activity text with server status placeholders.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
 - **Selfbot Mode**: Optional DM and Group DM polling mode using a user token and channel id.
 - **Runtime Reload**: Adds `/ratbridge reload` for OPs to reload config and reconnect Discord without restarting the server.
@@ -71,6 +72,7 @@ config/ratbridge/config.toml
 config/ratbridge/messages.toml
 config/ratbridge/topic-updater.toml
 config/ratbridge/channel-updaters.toml
+config/ratbridge/bot-presence.toml
 ```
 
 `config.toml` holds connection/client settings:
@@ -157,6 +159,32 @@ topicUpdaterIntervalMinutes = 6
 # Message = "TPS %tps%"
 # ShutdownMessage = "Server is offline"
 # UpdateInterval = 6
+```
+
+`bot-presence.toml` holds optional Discord bot status and activity rotation:
+
+```toml
+# Discord bot presence updater. Bot mode only.
+# Add one [[Presence]] block for each status/activity RatBridge should rotate through.
+# If this file has no active [[Presence]] blocks, bot presence updates are disabled.
+# OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.
+# ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.
+# Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.
+# StreamUrl: required only when ActivityType = STREAMING.
+# UpdateInterval: seconds before RatBridge moves to the next block. Minimum: 30.
+
+# Example:
+# [[Presence]]
+# OnlineStatus = "ONLINE"
+# ActivityType = "PLAYING"
+# Activity = "%playercount%/%playermax% players"
+# UpdateInterval = 60
+#
+# [[Presence]]
+# OnlineStatus = "DND"
+# ActivityType = "WATCHING"
+# Activity = "TPS %tps%"
+# UpdateInterval = 60
 ```
 
 `messages.toml` holds listener toggles and editable message text:
@@ -265,9 +293,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.6.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.6.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.6.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.7.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.7.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.7.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

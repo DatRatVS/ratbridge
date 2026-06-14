@@ -18,8 +18,9 @@ public final class BridgeConfigFile {
         Path messagesPath = directory.resolve("messages.toml");
         Path topicUpdaterPath = directory.resolve("topic-updater.toml");
         Path channelUpdatersPath = directory.resolve("channel-updaters.toml");
+        Path botPresencePath = directory.resolve("bot-presence.toml");
         Path legacyPath = directory.getParent() == null ? null : directory.getParent().resolve("ratbridge.toml");
-        Map<String, String> legacyValues = legacyPath != null && Files.exists(legacyPath) ? readValues(legacyPath) : Map.of();
+        Map<String, String> legacyValues = legacyPath != null && Files.exists(legacyPath) ? readValuesWithTables(legacyPath) : Map.of();
 
         if (Files.notExists(configPath)) {
             writeDefaultConfig(configPath, legacyValues);
@@ -39,12 +40,16 @@ public final class BridgeConfigFile {
         if (Files.notExists(channelUpdatersPath)) {
             writeDefaultChannelUpdaters(channelUpdatersPath, updaterSeedValues);
         }
+        if (Files.notExists(botPresencePath)) {
+            writeDefaultBotPresence(botPresencePath, legacyValues);
+        }
 
         Map<String, String> values = new LinkedHashMap<>();
         values.putAll(configValues);
         values.putAll(readValues(messagesPath));
         values.putAll(readValues(topicUpdaterPath));
-        values.putAll(readValuesWithChannelUpdaters(channelUpdatersPath));
+        values.putAll(readValuesWithTables(channelUpdatersPath));
+        values.putAll(readValuesWithTables(botPresencePath));
         return fromValues(values);
     }
 
@@ -53,7 +58,7 @@ public final class BridgeConfigFile {
             writeDefaultLegacy(path);
         }
 
-        return fromValues(readValuesWithChannelUpdaters(path));
+        return fromValues(readValuesWithTables(path));
     }
 
     public static void writeDefaultConfig(Path path, Map<String, String> seedValues) throws IOException {
@@ -70,6 +75,10 @@ public final class BridgeConfigFile {
 
     public static void writeDefaultChannelUpdaters(Path path, Map<String, String> seedValues) throws IOException {
         write(path, defaultChannelUpdatersToml(seedValues));
+    }
+
+    public static void writeDefaultBotPresence(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultBotPresenceToml(seedValues));
     }
 
     public static void writeDefaultLegacy(Path path) throws IOException {
@@ -92,8 +101,12 @@ public final class BridgeConfigFile {
         return defaultChannelUpdatersToml(Map.of());
     }
 
+    public static String defaultBotPresenceToml() {
+        return defaultBotPresenceToml(Map.of());
+    }
+
     public static String defaultLegacyToml() {
-        return defaultConfigToml() + "\n" + defaultTopicUpdaterToml() + "\n" + defaultChannelUpdatersToml() + "\n" + defaultMessagesToml();
+        return defaultConfigToml() + "\n" + defaultTopicUpdaterToml() + "\n" + defaultChannelUpdatersToml() + "\n" + defaultBotPresenceToml() + "\n" + defaultMessagesToml();
     }
 
     private static BridgeConfig fromValues(Map<String, String> values) {
@@ -114,6 +127,7 @@ public final class BridgeConfigFile {
                 string(values, "topicUpdaterShutdownMessage", "Server is offline"),
                 integer(values, "topicUpdaterIntervalMinutes", 6),
                 channelNameUpdaters(values),
+                botPresenceUpdates(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
                 bool(values, "syncDiscordToMinecraftChat", true),
@@ -149,10 +163,12 @@ public final class BridgeConfigFile {
         return values;
     }
 
-    private static Map<String, String> readValuesWithChannelUpdaters(Path path) throws IOException {
+    private static Map<String, String> readValuesWithTables(Path path) throws IOException {
         Map<String, String> values = new LinkedHashMap<>();
-        List<Map<String, String>> updaters = new ArrayList<>();
-        Map<String, String> currentUpdater = null;
+        List<Map<String, String>> channelUpdaters = new ArrayList<>();
+        List<Map<String, String>> botPresences = new ArrayList<>();
+        Map<String, String> currentTable = null;
+        String currentTableType = "";
 
         for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
             String stripped = stripComment(line).trim();
@@ -160,12 +176,20 @@ public final class BridgeConfigFile {
                 continue;
             }
             if ("[[ChannelUpdater]]".equals(stripped)) {
-                currentUpdater = new LinkedHashMap<>();
-                updaters.add(currentUpdater);
+                currentTable = new LinkedHashMap<>();
+                currentTableType = "ChannelUpdater";
+                channelUpdaters.add(currentTable);
+                continue;
+            }
+            if ("[[Presence]]".equals(stripped)) {
+                currentTable = new LinkedHashMap<>();
+                currentTableType = "Presence";
+                botPresences.add(currentTable);
                 continue;
             }
             if (stripped.startsWith("[")) {
-                currentUpdater = null;
+                currentTable = null;
+                currentTableType = "";
                 continue;
             }
             if (!stripped.contains("=")) {
@@ -175,22 +199,35 @@ public final class BridgeConfigFile {
             String[] parts = stripped.split("=", 2);
             String key = parts[0].trim();
             String value = unquote(parts[1].trim());
-            if (currentUpdater == null) {
+            if (currentTable == null || currentTableType.isEmpty()) {
                 values.put(key, value);
             } else {
-                currentUpdater.put(key, value);
+                currentTable.put(key, value);
             }
         }
 
-        if (!updaters.isEmpty()) {
-            values.put("channelNameUpdaterCount", Integer.toString(updaters.size()));
-            for (int index = 0; index < updaters.size(); index++) {
-                Map<String, String> updater = updaters.get(index);
+        if (!channelUpdaters.isEmpty()) {
+            values.put("channelNameUpdaterCount", Integer.toString(channelUpdaters.size()));
+            for (int index = 0; index < channelUpdaters.size(); index++) {
+                Map<String, String> updater = channelUpdaters.get(index);
                 String prefix = "channelNameUpdater" + (index + 1);
                 values.put(prefix + "ChannelId", firstValue(updater, "ChannelId", "channelId", "channelID"));
                 values.put(prefix + "Message", firstValue(updater, "Message", "message"));
                 values.put(prefix + "ShutdownMessage", firstValue(updater, "ShutdownMessage", "shutdownMessage"));
                 values.put(prefix + "UpdateInterval", firstValue(updater, "UpdateInterval", "updateInterval"));
+            }
+        }
+
+        if (!botPresences.isEmpty()) {
+            values.put("botPresenceCount", Integer.toString(botPresences.size()));
+            for (int index = 0; index < botPresences.size(); index++) {
+                Map<String, String> presence = botPresences.get(index);
+                String prefix = "botPresence" + (index + 1);
+                values.put(prefix + "OnlineStatus", firstValue(presence, "OnlineStatus", "onlineStatus", "Status", "status"));
+                values.put(prefix + "ActivityType", firstValue(presence, "ActivityType", "activityType", "Type", "type"));
+                values.put(prefix + "Activity", firstValue(presence, "Activity", "activity", "Text", "text"));
+                values.put(prefix + "StreamUrl", firstValue(presence, "StreamUrl", "streamUrl", "StreamURL", "streamURL"));
+                values.put(prefix + "UpdateInterval", firstValue(presence, "UpdateInterval", "updateInterval"));
             }
         }
 
@@ -319,6 +356,34 @@ public final class BridgeConfigFile {
                 + channelNameUpdaterTablesToml(values);
     }
 
+    private static String defaultBotPresenceToml(Map<String, String> values) {
+        return """
+                # RatBridge Discord bot presence updater.
+                # This file controls optional bot online status and activity rotation. Bot mode only.
+                
+                """
+                + "# Add one [[Presence]] block for each status/activity RatBridge should rotate through.\n"
+                + "# If this file has no active [[Presence]] blocks, bot presence updates are disabled.\n"
+                + "# OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.\n"
+                + "# ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.\n"
+                + "# Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.\n"
+                + "# StreamUrl: required only when ActivityType = STREAMING.\n"
+                + "# UpdateInterval: seconds before RatBridge moves to the next block. Minimum: 30.\n"
+                + "# Example:\n"
+                + "# [[Presence]]\n"
+                + "# OnlineStatus = \"ONLINE\"\n"
+                + "# ActivityType = \"PLAYING\"\n"
+                + "# Activity = \"%playercount%/%playermax% players\"\n"
+                + "# UpdateInterval = 60\n"
+                + "#\n"
+                + "# [[Presence]]\n"
+                + "# OnlineStatus = \"DND\"\n"
+                + "# ActivityType = \"WATCHING\"\n"
+                + "# Activity = \"TPS %tps%\"\n"
+                + "# UpdateInterval = 60\n"
+                + botPresenceTablesToml(values);
+    }
+
     private static String defaultMessagesToml(Map<String, String> values) {
         return """
                 # RatBridge message settings.
@@ -445,6 +510,22 @@ public final class BridgeConfigFile {
         return List.copyOf(updaters);
     }
 
+    private static List<BotPresenceConfig> botPresenceUpdates(Map<String, String> values) {
+        int count = Math.max(0, integer(values, "botPresenceCount", 0));
+        List<BotPresenceConfig> presences = new ArrayList<>();
+        for (int index = 1; index <= count; index++) {
+            String prefix = "botPresence" + index;
+            presences.add(new BotPresenceConfig(
+                    string(values, prefix + "OnlineStatus", "ONLINE"),
+                    string(values, prefix + "ActivityType", "PLAYING"),
+                    string(values, prefix + "Activity", ""),
+                    string(values, prefix + "StreamUrl", ""),
+                    integer(values, prefix + "UpdateInterval", 60)
+            ));
+        }
+        return List.copyOf(presences);
+    }
+
     private static String channelNameUpdaterTablesToml(Map<String, String> values) {
         int count = Math.max(0, integer(values, "channelNameUpdaterCount", 0));
         StringBuilder builder = new StringBuilder();
@@ -456,6 +537,22 @@ public final class BridgeConfigFile {
             builder.append("Message = ").append(quote(string(values, prefix + "Message", "%playercount% players online"))).append('\n');
             builder.append("ShutdownMessage = ").append(quote(string(values, prefix + "ShutdownMessage", "Server is offline"))).append('\n');
             builder.append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 6)).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private static String botPresenceTablesToml(Map<String, String> values) {
+        int count = Math.max(0, integer(values, "botPresenceCount", 0));
+        StringBuilder builder = new StringBuilder();
+        for (int index = 1; index <= count; index++) {
+            String prefix = "botPresence" + index;
+            builder.append('\n');
+            builder.append("[[Presence]]\n");
+            builder.append("OnlineStatus = ").append(quote(string(values, prefix + "OnlineStatus", "ONLINE"))).append('\n');
+            builder.append("ActivityType = ").append(quote(string(values, prefix + "ActivityType", "PLAYING"))).append('\n');
+            builder.append("Activity = ").append(quote(string(values, prefix + "Activity", ""))).append('\n');
+            builder.append("StreamUrl = ").append(quote(string(values, prefix + "StreamUrl", ""))).append('\n');
+            builder.append("UpdateInterval = ").append(integer(values, prefix + "UpdateInterval", 60)).append('\n');
         }
         return builder.toString();
     }

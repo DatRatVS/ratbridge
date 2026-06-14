@@ -134,6 +134,31 @@ final class BridgeControllerTest {
         controller.stop();
     }
 
+    @Test
+    void botPresenceFormatsStatusOnStart() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        BridgeConfig config = presenceConfig();
+        ServerStatusProvider statusProvider = uptimeMillis -> new ServerStatusSnapshot(
+                7,
+                20,
+                18,
+                "Rat SMP",
+                "Forge-1.20.1",
+                19.95,
+                60_000L
+        );
+
+        controller.start(config, message -> { }, statusProvider, () -> client);
+
+        BotPresenceConfig presence = client.presence.get(1, TimeUnit.SECONDS);
+        assertEquals("DND", presence.onlineStatus());
+        assertEquals("WATCHING", presence.activityType());
+        assertEquals("7/20 players | TPS 19.95", presence.activity());
+        assertEquals(30, presence.updateIntervalSeconds());
+        controller.stop();
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
         return config(webhookDelivery, true, true);
     }
@@ -142,6 +167,7 @@ final class BridgeControllerTest {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 webhookDelivery, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
                 List.of(),
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
@@ -155,6 +181,7 @@ final class BridgeControllerTest {
                 false, "RatBridge",
                 true, "topic-channel", "%playercount%/%playermax% online | TPS %tps% | %motd% | up %uptimemins%m", "Offline after %uptimemins%m with %playercount% players cached", 10,
                 List.of(),
+                List.of(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -167,6 +194,20 @@ final class BridgeControllerTest {
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(new ChannelNameUpdaterConfig("name-channel", "%playercount% players online", "Server is offline", 6)),
+                List.of(),
+                true, true, true,
+                true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static BridgeConfig presenceConfig() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
+                List.of(new BotPresenceConfig("DND", "WATCHING", "%playercount%/%playermax% players | TPS %tps%", "", 30)),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -183,6 +224,7 @@ final class BridgeControllerTest {
         private CompletableFuture<String> topic = new CompletableFuture<>();
         private CompletableFuture<String> nameChannelId = new CompletableFuture<>();
         private CompletableFuture<String> name = new CompletableFuture<>();
+        private CompletableFuture<BotPresenceConfig> presence = new CompletableFuture<>();
 
         @Override
         public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) {
@@ -217,6 +259,12 @@ final class BridgeControllerTest {
         public CompletableFuture<Void> updateChannelName(String channelId, String name) {
             this.nameChannelId.complete(channelId);
             this.name.complete(name);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> updateBotPresence(BotPresenceConfig presence) {
+            this.presence.complete(presence);
             return CompletableFuture.completedFuture(null);
         }
 

@@ -21,6 +21,10 @@ public interface DiscordBridgeClient extends AutoCloseable {
         return CompletableFuture.completedFuture(null);
     }
 
+    default CompletableFuture<Void> updateBotPresence(BotPresenceConfig presence) {
+        return CompletableFuture.completedFuture(null);
+    }
+
     default void sendMessageBlocking(String message, Duration timeout) {
         try {
             sendMessage(message).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);

@@ -56,6 +56,7 @@ final class BridgeConfigTest {
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 250,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -73,6 +74,7 @@ final class BridgeConfigTest {
                 true, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(),
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -89,6 +91,7 @@ final class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig(true, "slack", "webhook", "abc", "", "", "456", false,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -108,6 +111,7 @@ final class BridgeConfigTest {
                 false, "RatBridge",
                 true, "", "Players: %playercount%/%playermax%", "Server is offline", 4,
                 List.of(),
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -126,6 +130,7 @@ final class BridgeConfigTest {
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
                 List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 4)),
+                List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
@@ -140,10 +145,50 @@ final class BridgeConfigTest {
         assertTrue(result.errors().contains("channelNameUpdater1UpdateInterval must be at least 5 to respect Discord rate limits"));
     }
 
+    @Test
+    void botPresenceRequiresBotModeAndRateLimitSafeInterval() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
+                List.of(new BotPresenceConfig("invalid", "invalid", "online", "", 10)),
+                true, true, true, true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("bot presence updates require mode = 'bot'; Discord selfbot mode cannot use gateway bot presence"));
+        assertTrue(result.errors().contains("botPresence1OnlineStatus must be one of ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, INVISIBLE"));
+        assertTrue(result.errors().contains("botPresence1ActivityType must be one of PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, CUSTOM"));
+        assertTrue(result.errors().contains("botPresence1UpdateInterval must be at least 30 seconds to respect Discord presence rate limits"));
+    }
+
+    @Test
+    void streamingPresenceRequiresStreamUrl() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
+                List.of(new BotPresenceConfig("online", "streaming", "RatBridge", "", 60)),
+                true, true, true, true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("botPresence1StreamUrl is required when ActivityType is STREAMING"));
+    }
+
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                List.of(),
                 List.of(),
                 true, true, true, true, true, true, true, true, true,
                 750,

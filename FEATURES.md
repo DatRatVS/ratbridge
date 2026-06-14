@@ -130,5 +130,14 @@ F - Commands
         (Case no online players: `**No online players.**`)
         . These messages should be editable on messages.toml with placeholder support.
 
+K - Discord bot online status and status text: ✅
+  K1 - Allow the user to personalize what says in the bot's PLAYING
+  (Support all the modes, PLAYING, LISTENING, WATCHING, STREAMING... etc.)
+  (Allow custom changes between time to time with a simple syntax similar to ChannelUpdater in (item E))
+
+  K2 - Allow the user to change the bot's online status
+  (DND, Away, Online, Invisible etc if there are more supported by discord)
+  (Allow custom changes between time to time with a simple syntax similar to ChannelUpdater in (item E))
+
 L - Put channel and topic updaters in their own .toml files: ✅
   . Self explanatory

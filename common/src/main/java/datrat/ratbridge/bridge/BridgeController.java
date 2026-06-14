@@ -17,6 +17,7 @@ public final class BridgeController {
     private ServerStatusProvider statusProvider = ServerStatusProvider.empty();
     private ScheduledExecutorService topicUpdater;
     private ScheduledExecutorService channelNameUpdater;
+    private ScheduledExecutorService botPresenceUpdater;
     private long startedAtMillis;
 
     public synchronized void start(BridgeConfig config, MinecraftMessageSink minecraftSink, Supplier<DiscordBridgeClient> clientFactory) throws Exception {
@@ -39,12 +40,14 @@ public final class BridgeController {
         running.set(true);
         startTopicUpdater();
         startChannelNameUpdater();
+        startBotPresenceUpdater();
     }
 
     public synchronized void stop() {
         running.set(false);
         stopTopicUpdater();
         stopChannelNameUpdater();
+        stopBotPresenceUpdater();
         if (client != null) {
             client.close();
             client = null;
@@ -273,6 +276,53 @@ public final class BridgeController {
                     buildStatusMessage(updater.shutdownMessage()),
                     Duration.ofSeconds(5)
             );
+        }
+    }
+
+    private synchronized void startBotPresenceUpdater() {
+        BridgeConfig current = config;
+        if (current == null || current.botPresenceUpdates().isEmpty()) {
+            return;
+        }
+        botPresenceUpdater = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "RatBridge-Bot-Presence-Updater");
+            thread.setDaemon(true);
+            return thread;
+        });
+        botPresenceUpdater.execute(() -> updateBotPresenceSafely(0));
+    }
+
+    private synchronized void stopBotPresenceUpdater() {
+        if (botPresenceUpdater != null) {
+            botPresenceUpdater.shutdownNow();
+            botPresenceUpdater = null;
+        }
+    }
+
+    private void updateBotPresenceSafely(int index) {
+        try {
+            BridgeConfig current = config;
+            DiscordBridgeClient currentClient = client;
+            ScheduledExecutorService scheduler = botPresenceUpdater;
+            if (!isRunning() || current == null || currentClient == null || scheduler == null || current.botPresenceUpdates().isEmpty()) {
+                return;
+            }
+
+            int safeIndex = Math.floorMod(index, current.botPresenceUpdates().size());
+            BotPresenceConfig presence = current.botPresenceUpdates().get(safeIndex);
+            currentClient.updateBotPresence(new BotPresenceConfig(
+                    presence.onlineStatus(),
+                    presence.activityType(),
+                    buildStatusMessage(presence.activity()),
+                    presence.streamUrl(),
+                    presence.updateIntervalSeconds()
+            ));
+
+            int nextIndex = (safeIndex + 1) % current.botPresenceUpdates().size();
+            long delaySeconds = Math.max(30, presence.updateIntervalSeconds());
+            scheduler.schedule(() -> updateBotPresenceSafely(nextIndex), delaySeconds, TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+            // Discord client implementations log presence failures; the scheduler must keep running.
         }
     }
 

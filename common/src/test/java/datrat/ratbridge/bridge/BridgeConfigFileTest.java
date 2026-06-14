@@ -23,6 +23,7 @@ final class BridgeConfigFileTest {
         assertTrue(Files.exists(configDir.resolve("messages.toml")));
         assertTrue(Files.exists(configDir.resolve("topic-updater.toml")));
         assertTrue(Files.exists(configDir.resolve("channel-updaters.toml")));
+        assertTrue(Files.exists(configDir.resolve("bot-presence.toml")));
         assertEquals("discord", loaded.client());
         assertEquals("bot", loaded.mode());
         assertEquals("RATBRIDGE_DISCORD_TOKEN", loaded.tokenEnv());
@@ -35,6 +36,7 @@ final class BridgeConfigFileTest {
         assertEquals("Server is offline", loaded.topicUpdaterShutdownMessage());
         assertEquals(6, loaded.topicUpdaterIntervalMinutes());
         assertEquals(0, loaded.channelNameUpdaters().size());
+        assertEquals(0, loaded.botPresenceUpdates().size());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals(true, loaded.syncPlayerDeath());
@@ -80,6 +82,20 @@ final class BridgeConfigFileTest {
                 ShutdownMessage = "offline"
                 UpdateInterval = 20
                 """);
+        Files.writeString(configDir.resolve("bot-presence.toml"), """
+                [[Presence]]
+                OnlineStatus = "DND"
+                ActivityType = "WATCHING"
+                Activity = "%playercount% online # not comment"
+                UpdateInterval = 30
+                
+                [[Presence]]
+                OnlineStatus = "AWAY"
+                ActivityType = "STREAMING"
+                Activity = "RatBridge live"
+                StreamUrl = "https://twitch.tv/datrat"
+                UpdateInterval = 60
+                """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
                 syncMinecraftToDiscordChat = false
@@ -107,6 +123,14 @@ final class BridgeConfigFileTest {
         assertEquals("%playercount% players", loaded.channelNameUpdaters().get(0).message());
         assertEquals("TPS %tps% # not comment", loaded.channelNameUpdaters().get(1).message());
         assertEquals(20, loaded.channelNameUpdaters().get(1).updateIntervalMinutes());
+        assertEquals(2, loaded.botPresenceUpdates().size());
+        assertEquals("DND", loaded.botPresenceUpdates().get(0).onlineStatus());
+        assertEquals("WATCHING", loaded.botPresenceUpdates().get(0).activityType());
+        assertEquals("%playercount% online # not comment", loaded.botPresenceUpdates().get(0).activity());
+        assertEquals(30, loaded.botPresenceUpdates().get(0).updateIntervalSeconds());
+        assertEquals("AWAY", loaded.botPresenceUpdates().get(1).onlineStatus());
+        assertEquals("STREAMING", loaded.botPresenceUpdates().get(1).activityType());
+        assertEquals("https://twitch.tv/datrat", loaded.botPresenceUpdates().get(1).streamUrl());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());

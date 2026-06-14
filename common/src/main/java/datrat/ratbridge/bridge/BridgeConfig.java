@@ -22,6 +22,7 @@ public record BridgeConfig(
         String topicUpdaterShutdownMessage,
         int topicUpdaterIntervalMinutes,
         List<ChannelNameUpdaterConfig> channelNameUpdaters,
+        List<BotPresenceConfig> botPresenceUpdates,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
         boolean syncDiscordToMinecraftChat,
@@ -137,6 +138,32 @@ public record BridgeConfig(
             }
         }
 
+        if (!botPresenceUpdates.isEmpty() && !"bot".equals(resolvedMode)) {
+            errors.add("bot presence updates require mode = 'bot'; Discord selfbot mode cannot use gateway bot presence");
+        }
+
+        for (int index = 0; index < botPresenceUpdates.size(); index++) {
+            BotPresenceConfig presence = botPresenceUpdates.get(index);
+            String prefix = "botPresence" + (index + 1);
+            if (!hasText(presence.onlineStatus())) {
+                errors.add(prefix + "OnlineStatus is required");
+            } else if (!isSupportedPresenceStatus(presence.onlineStatus())) {
+                errors.add(prefix + "OnlineStatus must be one of ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, INVISIBLE");
+            }
+
+            if (hasText(presence.activity()) && !isSupportedActivityType(presence.activityType())) {
+                errors.add(prefix + "ActivityType must be one of PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, CUSTOM");
+            }
+
+            if (hasText(presence.activity()) && "streaming".equals(normalize(presence.activityType())) && !hasText(presence.streamUrl())) {
+                errors.add(prefix + "StreamUrl is required when ActivityType is STREAMING");
+            }
+
+            if (presence.updateIntervalSeconds() < 30) {
+                errors.add(prefix + "UpdateInterval must be at least 30 seconds to respect Discord presence rate limits");
+            }
+        }
+
         if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {
             errors.add("selfbotPollIntervalMillis must be at least 500");
         }
@@ -154,5 +181,19 @@ public record BridgeConfig(
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isSupportedPresenceStatus(String value) {
+        return switch (normalize(value)) {
+            case "online", "idle", "away", "dnd", "do_not_disturb", "invisible" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isSupportedActivityType(String value) {
+        return switch (normalize(value)) {
+            case "", "playing", "listening", "watching", "streaming", "competing", "custom", "custom_status" -> true;
+            default -> false;
+        };
     }
 }
