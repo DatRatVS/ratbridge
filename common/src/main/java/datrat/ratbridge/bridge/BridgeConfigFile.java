@@ -126,7 +126,9 @@ public final class BridgeConfigFile {
                 string(values, "topicUpdaterMessage", "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"),
                 string(values, "topicUpdaterShutdownMessage", "Server is offline"),
                 integer(values, "topicUpdaterIntervalMinutes", 6),
+                bool(values, "channelNameUpdatersEnabled", integer(values, "channelNameUpdaterCount", 0) > 0),
                 channelNameUpdaters(values),
+                bool(values, "botPresenceEnabled", integer(values, "botPresenceCount", 0) > 0),
                 botPresenceUpdates(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
@@ -335,6 +337,9 @@ public final class BridgeConfigFile {
                 
                 """
                 + "# Discord channel name updaters. Bot mode only; the bot needs Manage Channels permission.\n"
+                + "# Master switch. Set to true to enable every [[ChannelUpdater]] block below.\n"
+                + "channelNameUpdatersEnabled = " + boolString(values, "channelNameUpdatersEnabled", false) + "\n"
+                + "\n"
                 + "# Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.\n"
                 + "# Minimum update interval is 5 minutes; 6+ is recommended because Discord heavily rate-limits channel renames.\n"
                 + "# ChannelId: Discord channel ID to rename.\n"
@@ -363,7 +368,10 @@ public final class BridgeConfigFile {
                 
                 """
                 + "# Add one [[Presence]] block for each status/activity RatBridge should rotate through.\n"
-                + "# If this file has no active [[Presence]] blocks, bot presence updates are disabled.\n"
+                + "# Master switch. Set to true to enable every [[Presence]] block below.\n"
+                + "botPresenceEnabled = " + boolString(values, "botPresenceEnabled", false) + "\n"
+                + "\n"
+                + "# If this file has no [[Presence]] blocks, bot presence updates are disabled.\n"
                 + "# OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.\n"
                 + "# ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.\n"
                 + "# Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.\n"

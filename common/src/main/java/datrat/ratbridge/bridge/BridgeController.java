@@ -227,7 +227,7 @@ public final class BridgeController {
 
     private synchronized void startChannelNameUpdater() {
         BridgeConfig current = config;
-        if (current == null || current.channelNameUpdaters().isEmpty()) {
+        if (current == null || !current.channelNameUpdatersEnabled() || current.channelNameUpdaters().isEmpty()) {
             return;
         }
         channelNameUpdater = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -257,7 +257,7 @@ public final class BridgeController {
         try {
             BridgeConfig current = config;
             DiscordBridgeClient currentClient = client;
-            if (!isRunning() || current == null || currentClient == null || !current.channelNameUpdaters().contains(updater)) {
+            if (!isRunning() || current == null || currentClient == null || !current.channelNameUpdatersEnabled() || !current.channelNameUpdaters().contains(updater)) {
                 return;
             }
             currentClient.updateChannelName(updater.channelId(), buildStatusMessage(updater.message()));
@@ -267,6 +267,9 @@ public final class BridgeController {
     }
 
     private void updateShutdownChannelNames(BridgeConfig current, DiscordBridgeClient currentClient) {
+        if (!current.channelNameUpdatersEnabled()) {
+            return;
+        }
         for (ChannelNameUpdaterConfig updater : current.channelNameUpdaters()) {
             if (!BridgeConfig.hasText(updater.shutdownMessage())) {
                 continue;
@@ -281,7 +284,7 @@ public final class BridgeController {
 
     private synchronized void startBotPresenceUpdater() {
         BridgeConfig current = config;
-        if (current == null || current.botPresenceUpdates().isEmpty()) {
+        if (current == null || !current.botPresenceEnabled() || current.botPresenceUpdates().isEmpty()) {
             return;
         }
         botPresenceUpdater = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -304,7 +307,7 @@ public final class BridgeController {
             BridgeConfig current = config;
             DiscordBridgeClient currentClient = client;
             ScheduledExecutorService scheduler = botPresenceUpdater;
-            if (!isRunning() || current == null || currentClient == null || scheduler == null || current.botPresenceUpdates().isEmpty()) {
+            if (!isRunning() || current == null || currentClient == null || scheduler == null || !current.botPresenceEnabled() || current.botPresenceUpdates().isEmpty()) {
                 return;
             }
 

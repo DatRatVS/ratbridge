@@ -21,7 +21,9 @@ public record BridgeConfig(
         String topicUpdaterMessage,
         String topicUpdaterShutdownMessage,
         int topicUpdaterIntervalMinutes,
+        boolean channelNameUpdatersEnabled,
         List<ChannelNameUpdaterConfig> channelNameUpdaters,
+        boolean botPresenceEnabled,
         List<BotPresenceConfig> botPresenceUpdates,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
@@ -120,47 +122,51 @@ public record BridgeConfig(
             errors.add("topicUpdaterIntervalMinutes must be at least 5 to respect Discord rate limits");
         }
 
-        if (!channelNameUpdaters.isEmpty() && !"bot".equals(resolvedMode)) {
+        if (channelNameUpdatersEnabled && !channelNameUpdaters.isEmpty() && !"bot".equals(resolvedMode)) {
             errors.add("channel name updaters require mode = 'bot'; Discord guild channels cannot be managed by selfbot mode");
         }
 
-        for (int index = 0; index < channelNameUpdaters.size(); index++) {
-            ChannelNameUpdaterConfig updater = channelNameUpdaters.get(index);
-            String prefix = "channelNameUpdater" + (index + 1);
-            if (!hasText(updater.channelId())) {
-                errors.add(prefix + "ChannelId is required");
-            }
-            if (!hasText(updater.message())) {
-                errors.add(prefix + "Message is required");
-            }
-            if (updater.updateIntervalMinutes() < 5) {
-                errors.add(prefix + "UpdateInterval must be at least 5 to respect Discord rate limits");
+        if (channelNameUpdatersEnabled) {
+            for (int index = 0; index < channelNameUpdaters.size(); index++) {
+                ChannelNameUpdaterConfig updater = channelNameUpdaters.get(index);
+                String prefix = "channelNameUpdater" + (index + 1);
+                if (!hasText(updater.channelId())) {
+                    errors.add(prefix + "ChannelId is required");
+                }
+                if (!hasText(updater.message())) {
+                    errors.add(prefix + "Message is required");
+                }
+                if (updater.updateIntervalMinutes() < 5) {
+                    errors.add(prefix + "UpdateInterval must be at least 5 to respect Discord rate limits");
+                }
             }
         }
 
-        if (!botPresenceUpdates.isEmpty() && !"bot".equals(resolvedMode)) {
+        if (botPresenceEnabled && !botPresenceUpdates.isEmpty() && !"bot".equals(resolvedMode)) {
             errors.add("bot presence updates require mode = 'bot'; Discord selfbot mode cannot use gateway bot presence");
         }
 
-        for (int index = 0; index < botPresenceUpdates.size(); index++) {
-            BotPresenceConfig presence = botPresenceUpdates.get(index);
-            String prefix = "botPresence" + (index + 1);
-            if (!hasText(presence.onlineStatus())) {
-                errors.add(prefix + "OnlineStatus is required");
-            } else if (!isSupportedPresenceStatus(presence.onlineStatus())) {
-                errors.add(prefix + "OnlineStatus must be one of ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, INVISIBLE");
-            }
+        if (botPresenceEnabled) {
+            for (int index = 0; index < botPresenceUpdates.size(); index++) {
+                BotPresenceConfig presence = botPresenceUpdates.get(index);
+                String prefix = "botPresence" + (index + 1);
+                if (!hasText(presence.onlineStatus())) {
+                    errors.add(prefix + "OnlineStatus is required");
+                } else if (!isSupportedPresenceStatus(presence.onlineStatus())) {
+                    errors.add(prefix + "OnlineStatus must be one of ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, INVISIBLE");
+                }
 
-            if (hasText(presence.activity()) && !isSupportedActivityType(presence.activityType())) {
-                errors.add(prefix + "ActivityType must be one of PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, CUSTOM");
-            }
+                if (hasText(presence.activity()) && !isSupportedActivityType(presence.activityType())) {
+                    errors.add(prefix + "ActivityType must be one of PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, CUSTOM");
+                }
 
-            if (hasText(presence.activity()) && "streaming".equals(normalize(presence.activityType())) && !hasText(presence.streamUrl())) {
-                errors.add(prefix + "StreamUrl is required when ActivityType is STREAMING");
-            }
+                if (hasText(presence.activity()) && "streaming".equals(normalize(presence.activityType())) && !hasText(presence.streamUrl())) {
+                    errors.add(prefix + "StreamUrl is required when ActivityType is STREAMING");
+                }
 
-            if (presence.updateIntervalSeconds() < 30) {
-                errors.add(prefix + "UpdateInterval must be at least 30 seconds to respect Discord presence rate limits");
+                if (presence.updateIntervalSeconds() < 30) {
+                    errors.add(prefix + "UpdateInterval must be at least 30 seconds to respect Discord presence rate limits");
+                }
             }
         }
 

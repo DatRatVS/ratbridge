@@ -140,6 +140,9 @@ topicUpdaterIntervalMinutes = 6
 
 ```toml
 # Discord channel name updaters. Bot mode only; requires Manage Channels permission.
+# Master switch. Set to true to enable every [[ChannelUpdater]] block below.
+channelNameUpdatersEnabled = false
+
 # Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.
 # Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.
 # ChannelId: Discord channel ID to rename.
@@ -166,7 +169,10 @@ topicUpdaterIntervalMinutes = 6
 ```toml
 # Discord bot presence updater. Bot mode only.
 # Add one [[Presence]] block for each status/activity RatBridge should rotate through.
-# If this file has no active [[Presence]] blocks, bot presence updates are disabled.
+# Master switch. Set to true to enable every [[Presence]] block below.
+botPresenceEnabled = false
+
+# If this file has no [[Presence]] blocks, bot presence updates are disabled.
 # OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.
 # ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.
 # Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.

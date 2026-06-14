@@ -35,7 +35,9 @@ final class BridgeConfigFileTest {
         assertEquals("Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m", loaded.topicUpdaterMessage());
         assertEquals("Server is offline", loaded.topicUpdaterShutdownMessage());
         assertEquals(6, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(false, loaded.channelNameUpdatersEnabled());
         assertEquals(0, loaded.channelNameUpdaters().size());
+        assertEquals(false, loaded.botPresenceEnabled());
         assertEquals(0, loaded.botPresenceUpdates().size());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
@@ -70,6 +72,8 @@ final class BridgeConfigFileTest {
                 topicUpdaterIntervalMinutes = 15
                 """);
         Files.writeString(configDir.resolve("channel-updaters.toml"), """
+                channelNameUpdatersEnabled = true
+                
                 [[ChannelUpdater]]
                 ChannelId = "100"
                 Message = "%playercount% players"
@@ -83,6 +87,8 @@ final class BridgeConfigFileTest {
                 UpdateInterval = 20
                 """);
         Files.writeString(configDir.resolve("bot-presence.toml"), """
+                botPresenceEnabled = true
+                
                 [[Presence]]
                 OnlineStatus = "DND"
                 ActivityType = "WATCHING"
@@ -118,11 +124,13 @@ final class BridgeConfigFileTest {
         assertEquals("%playercount% online", loaded.topicUpdaterMessage());
         assertEquals("offline", loaded.topicUpdaterShutdownMessage());
         assertEquals(15, loaded.topicUpdaterIntervalMinutes());
+        assertEquals(true, loaded.channelNameUpdatersEnabled());
         assertEquals(2, loaded.channelNameUpdaters().size());
         assertEquals("100", loaded.channelNameUpdaters().get(0).channelId());
         assertEquals("%playercount% players", loaded.channelNameUpdaters().get(0).message());
         assertEquals("TPS %tps% # not comment", loaded.channelNameUpdaters().get(1).message());
         assertEquals(20, loaded.channelNameUpdaters().get(1).updateIntervalMinutes());
+        assertEquals(true, loaded.botPresenceEnabled());
         assertEquals(2, loaded.botPresenceUpdates().size());
         assertEquals("DND", loaded.botPresenceUpdates().get(0).onlineStatus());
         assertEquals("WATCHING", loaded.botPresenceUpdates().get(0).activityType());
