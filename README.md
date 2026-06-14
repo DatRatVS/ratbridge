@@ -65,7 +65,7 @@ Discord forbids automated normal user accounts/selfbots. Using selfbot mode can 
 
 ## Config
 
-RatBridge generates:
+RatBridge generates/uses:
 
 ```text
 config/ratbridge/config.toml
@@ -73,6 +73,8 @@ config/ratbridge/messages.toml
 config/ratbridge/topic-updater.toml
 config/ratbridge/channel-updaters.toml
 config/ratbridge/bot-presence.toml
+config/ratbridge/authentication.toml
+config/ratbridge/authentication-users.toml
 ```
 
 `config.toml` holds connection/client settings:
@@ -193,6 +195,32 @@ botPresenceEnabled = false
 # UpdateInterval = 60
 ```
 
+`authentication.toml` controls optional Discord-driven Minecraft authentication:
+
+```toml
+# Master switch for Discord-driven authentication.
+authenticationEnabled = false
+
+# Minutes before an unused join code expires.
+authenticationCodeTtlMinutes = 10
+
+# Minecraft disconnect screen text. Use \n for line breaks.
+# Placeholders: {player}, {uuid}, {code}, {logoutCommand}
+authenticationKickMessage = "This server requires Discord authentication.\nSend code {code} to the RatBridge bot DM to authenticate {player}."
+
+# Discord DM responses.
+authenticationSuccessMessage = "Authenticated {player}. You can now join the server."
+authenticationInvalidCodeMessage = "Invalid or expired authentication code."
+authenticationAlreadyLinkedMessage = "That Minecraft or Discord account is already linked to another account."
+
+# Discord DM command that removes the current link.
+authenticationLogoutCommand = "r!logout"
+authenticationLogoutSuccessMessage = "Your Minecraft account link was removed. Join the server again to get a new code."
+authenticationLogoutNotLinkedMessage = "Your Discord account is not linked to any Minecraft account."
+```
+
+When authentication is enabled, RatBridge stores accepted links in `authentication-users.toml`. That file is managed by the mod. One Minecraft account can link to one Discord account, and one Discord account can link to one Minecraft account.
+
 `messages.toml` holds listener toggles and editable message text:
 
 ```toml
@@ -275,7 +303,7 @@ The command requires permission level `2`.
 Reload behavior:
 
 - Stops the active bridge.
-- Reloads `config/ratbridge/config.toml` and `config/ratbridge/messages.toml`.
+- Reloads the RatBridge split config files, including `authentication.toml`.
 - Validates the new config.
 - Reconnects Discord asynchronously so the server thread does not wait on Discord login.
 
@@ -302,9 +330,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.9.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.9.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.9.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.10.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.10.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.10.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

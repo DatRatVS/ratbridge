@@ -1,16 +1,25 @@
 package datrat.ratbridge.bridge;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class BridgeControllerTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void webhookDeliveryMirrorsMinecraftChatButKeepsEventsNormal() throws Exception {
         BridgeController controller = new BridgeController();
@@ -171,6 +180,37 @@ final class BridgeControllerTest {
         controller.stop();
     }
 
+    @Test
+    void authenticationLinksAndLogsOutThroughPrivateDiscordMessages() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(
+                authConfig(),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+        );
+
+        AuthenticationDecision firstJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        assertFalse(firstJoin.allowed());
+        String code = authCode(firstJoin.disconnectMessage());
+
+        client.receive(new DiscordInboundMessage("Alex", code, "", "discord-1", "dm-1", true, false));
+        assertEquals("Authenticated Steve. You can now join the server.", client.directMessage);
+
+        AuthenticationDecision secondJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        assertTrue(secondJoin.allowed());
+
+        client.receive(new DiscordInboundMessage("Alex", "r!logout", "", "discord-1", "dm-1", true, false));
+        assertEquals("Your Minecraft account link was removed. Join the server again to get a new code.", client.directMessage);
+
+        AuthenticationDecision thirdJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        assertFalse(thirdJoin.allowed());
+        controller.stop();
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
         return config(webhookDelivery, true, true);
     }
@@ -183,6 +223,7 @@ final class BridgeControllerTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
                 750,
@@ -198,6 +239,7 @@ final class BridgeControllerTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -213,6 +255,7 @@ final class BridgeControllerTest {
                 List.of(new ChannelNameUpdaterConfig("name-channel", "%playercount% players online", "Server is offline", 6)),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -228,6 +271,7 @@ final class BridgeControllerTest {
                 List.of(),
                 true,
                 List.of(new BotPresenceConfig("DND", "WATCHING", "%playercount%/%playermax% players | TPS %tps%", "", 30)),
+                AuthenticationConfig.disabled(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -235,10 +279,43 @@ final class BridgeControllerTest {
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
     }
 
+    private static BridgeConfig authConfig() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                false,
+                List.of(),
+                false,
+                List.of(),
+                new AuthenticationConfig(
+                        true,
+                        10,
+                        "Code {code} for {player}",
+                        "Authenticated {player}. You can now join the server.",
+                        "Invalid or expired authentication code.",
+                        "That Minecraft or Discord account is already linked to another account.",
+                        "r!logout",
+                        "Your Minecraft account link was removed. Join the server again to get a new code.",
+                        "Your Discord account is not linked to any Minecraft account."
+                ),
+                true, true, true,
+                true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static String authCode(String message) {
+        Matcher matcher = Pattern.compile("\\b(\\d{6})\\b").matcher(message);
+        assertTrue(matcher.find());
+        return matcher.group(1);
+    }
+
     private static final class FakeDiscordClient implements DiscordBridgeClient {
         private String normalMessage;
         private String webhookPlayer;
         private String webhookMessage;
+        private String directMessage;
         private Consumer<DiscordInboundMessage> inboundConsumer;
         private CompletableFuture<String> topicChannelId = new CompletableFuture<>();
         private CompletableFuture<String> topic = new CompletableFuture<>();
@@ -265,6 +342,12 @@ final class BridgeControllerTest {
         public CompletableFuture<Void> sendMinecraftChatMessage(String player, String message) {
             webhookPlayer = player;
             webhookMessage = message;
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> sendDirectMessage(String userId, String channelId, String message) {
+            directMessage = message;
             return CompletableFuture.completedFuture(null);
         }
 

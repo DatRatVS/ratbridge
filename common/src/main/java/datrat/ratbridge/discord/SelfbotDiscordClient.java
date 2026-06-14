@@ -65,12 +65,22 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
 
     @Override
     public CompletableFuture<Void> sendMessage(String message) {
+        return sendChannelMessage(config.channelId(), message);
+    }
+
+    @Override
+    public CompletableFuture<Void> sendDirectMessage(String userId, String channelId, String message) {
+        String targetChannelId = BridgeConfig.hasText(channelId) ? channelId : config.channelId();
+        return sendChannelMessage(targetChannelId, message);
+    }
+
+    private CompletableFuture<Void> sendChannelMessage(String channelId, String message) {
         if (message.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
         JsonObject body = new JsonObject();
         body.addProperty("content", message);
-        HttpRequest request = baseRequest(channelUri("/messages"))
+        HttpRequest request = baseRequest(channelUri(channelId, "/messages"))
                 .timeout(Duration.ofSeconds(10))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
@@ -192,17 +202,22 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
 
         String authorName = author == null ? "Discord" : displayName(author);
         String replyAuthorName = referencedAuthorName(message);
-        inboundConsumer.accept(new DiscordInboundMessage(authorName, content, replyAuthorName));
+        String authorId = author == null ? "" : getString(author, "id");
+        inboundConsumer.accept(new DiscordInboundMessage(authorName, content, replyAuthorName, authorId, config.channelId(), true, true));
     }
 
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.9");
+                .header("User-Agent", "RatBridge/0.1.10");
     }
 
     private URI channelUri(String suffix) {
-        String channelId = URLEncoder.encode(config.channelId(), StandardCharsets.UTF_8);
+        return channelUri(config.channelId(), suffix);
+    }
+
+    private URI channelUri(String channelId, String suffix) {
+        channelId = URLEncoder.encode(channelId, StandardCharsets.UTF_8);
         return URI.create(API_BASE + "/channels/" + channelId + suffix);
     }
 

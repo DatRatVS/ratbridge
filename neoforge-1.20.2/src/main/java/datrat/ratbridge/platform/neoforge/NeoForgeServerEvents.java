@@ -1,6 +1,8 @@
 package datrat.ratbridge.platform.neoforge;
 
 import com.mojang.brigadier.CommandDispatcher;
+import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
@@ -69,7 +71,8 @@ public final class NeoForgeServerEvents {
                     config,
                     new NeoForgeMinecraftMessageSink(event.getServer()),
                     new NeoForgeServerStatusProvider(event.getServer(), tpsMonitor),
-                    () -> DiscordClientFactory.create(config)
+                    () -> DiscordClientFactory.create(config),
+                    authenticationStore()
             );
             bridge.onServerStarted();
             RatBridgeNeoForge.LOGGER.info("RatBridge started with client={} mode={}", config.client(), config.mode());
@@ -110,6 +113,14 @@ public final class NeoForgeServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            AuthenticationDecision decision = bridge.authenticateLogin(
+                    player.getGameProfile().getId().toString(),
+                    player.getGameProfile().getName()
+            );
+            if (!decision.allowed()) {
+                player.connection.disconnect(Component.literal(decision.disconnectMessage()));
+                return;
+            }
             bridge.onPlayerJoined(player.getGameProfile().getName());
         }
     }
@@ -185,7 +196,8 @@ public final class NeoForgeServerEvents {
                         config,
                         new NeoForgeMinecraftMessageSink(server),
                         new NeoForgeServerStatusProvider(server, tpsMonitor),
-                        () -> DiscordClientFactory.create(config)
+                        () -> DiscordClientFactory.create(config),
+                        authenticationStore()
                 );
                 if (!serverAvailable.get()) {
                     bridge.stop();
@@ -207,6 +219,10 @@ public final class NeoForgeServerEvents {
     private BridgeConfig loadConfig() throws Exception {
         Path configDirectory = FMLPaths.CONFIGDIR.get().resolve("ratbridge");
         return BridgeConfigFile.loadSplit(configDirectory);
+    }
+
+    private AuthenticationStore authenticationStore() {
+        return new AuthenticationStore(FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve("authentication-users.toml"));
     }
 
     private static AdvancementDisplay readAdvancementDisplay(Object event) {

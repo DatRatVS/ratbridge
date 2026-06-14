@@ -1,6 +1,8 @@
 package datrat.ratbridge.platform.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
+import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
@@ -55,7 +57,7 @@ public final class RatBridgeFabric implements ModInitializer {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) ->
                 bridge.onMinecraftChat(sender.getGameProfile().getName(), message.signedContent()));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                bridge.onPlayerJoined(handler.player.getGameProfile().getName()));
+                onPlayerJoined(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 bridge.onPlayerLeft(handler.player.getGameProfile().getName()));
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
@@ -153,7 +155,8 @@ public final class RatBridgeFabric implements ModInitializer {
                         config,
                         new FabricMinecraftMessageSink(server),
                         new FabricServerStatusProvider(server, tpsMonitor),
-                        () -> DiscordClientFactory.create(config)
+                        () -> DiscordClientFactory.create(config),
+                        authenticationStore()
                 );
                 if (!serverAvailable.get()) {
                     bridge.stop();
@@ -186,10 +189,11 @@ public final class RatBridgeFabric implements ModInitializer {
 
         try {
             bridge.start(
-                    config,
-                    new FabricMinecraftMessageSink(server),
-                    new FabricServerStatusProvider(server, tpsMonitor),
-                    () -> DiscordClientFactory.create(config)
+                        config,
+                        new FabricMinecraftMessageSink(server),
+                        new FabricServerStatusProvider(server, tpsMonitor),
+                        () -> DiscordClientFactory.create(config),
+                        authenticationStore()
             );
             if (!reloaded) {
                 bridge.onServerStarted();
@@ -204,5 +208,21 @@ public final class RatBridgeFabric implements ModInitializer {
     private BridgeConfig loadConfig() throws Exception {
         Path configDirectory = FabricLoader.getInstance().getConfigDir().resolve("ratbridge");
         return BridgeConfigFile.loadSplit(configDirectory);
+    }
+
+    private void onPlayerJoined(ServerPlayer player) {
+        AuthenticationDecision decision = bridge.authenticateLogin(
+                player.getGameProfile().getId().toString(),
+                player.getGameProfile().getName()
+        );
+        if (!decision.allowed()) {
+            player.connection.disconnect(Component.literal(decision.disconnectMessage()));
+            return;
+        }
+        bridge.onPlayerJoined(player.getGameProfile().getName());
+    }
+
+    private AuthenticationStore authenticationStore() {
+        return new AuthenticationStore(FabricLoader.getInstance().getConfigDir().resolve("ratbridge").resolve("authentication-users.toml"));
     }
 }

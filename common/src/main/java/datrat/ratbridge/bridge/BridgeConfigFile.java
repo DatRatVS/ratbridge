@@ -19,6 +19,7 @@ public final class BridgeConfigFile {
         Path topicUpdaterPath = directory.resolve("topic-updater.toml");
         Path channelUpdatersPath = directory.resolve("channel-updaters.toml");
         Path botPresencePath = directory.resolve("bot-presence.toml");
+        Path authenticationPath = directory.resolve("authentication.toml");
         Path legacyPath = directory.getParent() == null ? null : directory.getParent().resolve("ratbridge.toml");
         Map<String, String> legacyValues = legacyPath != null && Files.exists(legacyPath) ? readValuesWithTables(legacyPath) : Map.of();
 
@@ -43,6 +44,9 @@ public final class BridgeConfigFile {
         if (Files.notExists(botPresencePath)) {
             writeDefaultBotPresence(botPresencePath, legacyValues);
         }
+        if (Files.notExists(authenticationPath)) {
+            writeDefaultAuthentication(authenticationPath, legacyValues);
+        }
 
         Map<String, String> values = new LinkedHashMap<>();
         values.putAll(configValues);
@@ -50,6 +54,7 @@ public final class BridgeConfigFile {
         values.putAll(readValues(topicUpdaterPath));
         values.putAll(readValuesWithTables(channelUpdatersPath));
         values.putAll(readValuesWithTables(botPresencePath));
+        values.putAll(readValues(authenticationPath));
         return fromValues(values);
     }
 
@@ -81,6 +86,10 @@ public final class BridgeConfigFile {
         write(path, defaultBotPresenceToml(seedValues));
     }
 
+    public static void writeDefaultAuthentication(Path path, Map<String, String> seedValues) throws IOException {
+        write(path, defaultAuthenticationToml(seedValues));
+    }
+
     public static void writeDefaultLegacy(Path path) throws IOException {
         write(path, defaultLegacyToml());
     }
@@ -105,8 +114,12 @@ public final class BridgeConfigFile {
         return defaultBotPresenceToml(Map.of());
     }
 
+    public static String defaultAuthenticationToml() {
+        return defaultAuthenticationToml(Map.of());
+    }
+
     public static String defaultLegacyToml() {
-        return defaultConfigToml() + "\n" + defaultTopicUpdaterToml() + "\n" + defaultChannelUpdatersToml() + "\n" + defaultBotPresenceToml() + "\n" + defaultMessagesToml();
+        return defaultConfigToml() + "\n" + defaultTopicUpdaterToml() + "\n" + defaultChannelUpdatersToml() + "\n" + defaultBotPresenceToml() + "\n" + defaultAuthenticationToml() + "\n" + defaultMessagesToml();
     }
 
     private static BridgeConfig fromValues(Map<String, String> values) {
@@ -130,6 +143,7 @@ public final class BridgeConfigFile {
                 channelNameUpdaters(values),
                 bool(values, "botPresenceEnabled", integer(values, "botPresenceCount", 0) > 0),
                 botPresenceUpdates(values),
+                authenticationConfig(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
                 bool(values, "syncDiscordToMinecraftChat", true),
@@ -249,7 +263,7 @@ public final class BridgeConfigFile {
         return """
                 # Main RatBridge settings.
                 # This file controls which external service/client is used and how RatBridge logs in.
-                
+
                 # Master switch. Set to false to keep the mod installed but stop all bridge activity.
                 """
                 + "enabled = " + boolString(values, "enabled", true) + "\n"
@@ -393,6 +407,48 @@ public final class BridgeConfigFile {
                 + botPresenceTablesToml(values);
     }
 
+    private static String defaultAuthenticationToml(Map<String, String> values) {
+        return """
+                # RatBridge Discord authentication.
+                # When enabled, players must link one Minecraft account to one Discord account before they can play.
+                # Flow:
+                # 1. Player joins Minecraft.
+                # 2. RatBridge disconnects them with a six digit code.
+                # 3. Player sends that code to the Discord bot DM.
+                # 4. RatBridge stores the Minecraft <-> Discord link and the player can join again.
+                """
+                + "# Master switch for Discord-driven authentication.\n"
+                + "authenticationEnabled = " + boolString(values, "authenticationEnabled", false) + "\n"
+                + "\n"
+                + "# Minutes before an unused join code expires. A new code is generated on the next join attempt.\n"
+                + "authenticationCodeTtlMinutes = " + integer(values, "authenticationCodeTtlMinutes", 10) + "\n"
+                + "\n"
+                + "# Message shown on the Minecraft disconnect screen while the account is not authenticated.\n"
+                + "# Use \\n inside the string for line breaks.\n"
+                + "# Placeholders: {player}, {uuid}, {code}, {logoutCommand}\n"
+                + "authenticationKickMessage = " + quote(string(values, "authenticationKickMessage", "This server requires Discord authentication.\nSend code {code} to the RatBridge bot DM to authenticate {player}.")) + "\n"
+                + "\n"
+                + "# DM response after a code is accepted.\n"
+                + "# Placeholders: {player}, {discord}, {code}\n"
+                + "authenticationSuccessMessage = " + quote(string(values, "authenticationSuccessMessage", "Authenticated {player}. You can now join the server.")) + "\n"
+                + "\n"
+                + "# DM response when the user sends an invalid or expired six digit code.\n"
+                + "authenticationInvalidCodeMessage = " + quote(string(values, "authenticationInvalidCodeMessage", "Invalid or expired authentication code.")) + "\n"
+                + "\n"
+                + "# DM response when either side of the link is already used by another account.\n"
+                + "# This prevents one Minecraft account from linking to two Discord accounts and vice versa.\n"
+                + "authenticationAlreadyLinkedMessage = " + quote(string(values, "authenticationAlreadyLinkedMessage", "That Minecraft or Discord account is already linked to another account.")) + "\n"
+                + "\n"
+                + "# DM command that removes the Discord user's current link.\n"
+                + "authenticationLogoutCommand = " + quote(string(values, "authenticationLogoutCommand", "r!logout")) + "\n"
+                + "\n"
+                + "# DM response after the logout command removes a link.\n"
+                + "authenticationLogoutSuccessMessage = " + quote(string(values, "authenticationLogoutSuccessMessage", "Your Minecraft account link was removed. Join the server again to get a new code.")) + "\n"
+                + "\n"
+                + "# DM response when the logout command is used by a Discord account with no link.\n"
+                + "authenticationLogoutNotLinkedMessage = " + quote(string(values, "authenticationLogoutNotLinkedMessage", "Your Discord account is not linked to any Minecraft account.")) + "\n";
+    }
+
     private static String defaultMessagesToml(Map<String, String> values) {
         return """
                 # RatBridge message settings.
@@ -499,13 +555,16 @@ public final class BridgeConfigFile {
 
     private static String unquote(String value) {
         if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
+            return value.substring(1, value.length() - 1)
+                    .replace("\\n", "\n")
+                    .replace("\\\"", "\"")
+                    .replace("\\\\", "\\");
         }
         return value;
     }
 
     private static String quote(String value) {
-        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        return "\"" + value.replace("\\", "\\\\").replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
     private static List<ChannelNameUpdaterConfig> channelNameUpdaters(Map<String, String> values) {
@@ -537,6 +596,21 @@ public final class BridgeConfigFile {
             ));
         }
         return List.copyOf(presences);
+    }
+
+    private static AuthenticationConfig authenticationConfig(Map<String, String> values) {
+        AuthenticationConfig fallback = AuthenticationConfig.disabled();
+        return new AuthenticationConfig(
+                bool(values, "authenticationEnabled", fallback.enabled()),
+                integer(values, "authenticationCodeTtlMinutes", fallback.codeTtlMinutes()),
+                string(values, "authenticationKickMessage", fallback.kickMessage()),
+                string(values, "authenticationSuccessMessage", fallback.successMessage()),
+                string(values, "authenticationInvalidCodeMessage", fallback.invalidCodeMessage()),
+                string(values, "authenticationAlreadyLinkedMessage", fallback.alreadyLinkedMessage()),
+                string(values, "authenticationLogoutCommand", fallback.logoutCommand()),
+                string(values, "authenticationLogoutSuccessMessage", fallback.logoutSuccessMessage()),
+                string(values, "authenticationLogoutNotLinkedMessage", fallback.logoutNotLinkedMessage())
+        );
     }
 
     private static String channelNameUpdaterTablesToml(Map<String, String> values) {

@@ -59,6 +59,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 250,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -79,6 +80,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -99,6 +101,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -120,6 +123,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -141,6 +145,7 @@ final class BridgeConfigTest {
                 List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 4)),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -164,6 +169,7 @@ final class BridgeConfigTest {
                 List.of(new ChannelNameUpdaterConfig("", "", "Server is offline", 1)),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -183,6 +189,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true,
                 List.of(new BotPresenceConfig("invalid", "invalid", "online", "", 10)),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -206,6 +213,7 @@ final class BridgeConfigTest {
                 List.of(),
                 true,
                 List.of(new BotPresenceConfig("online", "streaming", "RatBridge", "", 60)),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -226,6 +234,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(new BotPresenceConfig("invalid", "invalid", "online", "", 1)),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
@@ -236,6 +245,30 @@ final class BridgeConfigTest {
         assertTrue(result.valid());
     }
 
+    @Test
+    void authenticationRequiresUsableMessagesAndTtl() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                false,
+                List.of(),
+                false,
+                List.of(),
+                new AuthenticationConfig(true, 0, "", "", "bad", "linked", "", "out", "none"),
+                true, true, true, true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("authenticationCodeTtlMinutes must be at least 1"));
+        assertTrue(result.errors().contains("authenticationKickMessage is required when authentication is enabled"));
+        assertTrue(result.errors().contains("authenticationSuccessMessage is required when authentication is enabled"));
+        assertTrue(result.errors().contains("authenticationLogoutCommand is required when authentication is enabled"));
+    }
+
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
         return new BridgeConfig(true, "discord", mode, token, "RATBRIDGE_DISCORD_TOKEN", serverId, channelId, enableSelfbot,
                 false, "RatBridge",
@@ -244,6 +277,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
+                AuthenticationConfig.disabled(),
                 true, true, true, true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",

@@ -18,6 +18,7 @@ public final class BridgeController {
     private ScheduledExecutorService topicUpdater;
     private ScheduledExecutorService channelNameUpdater;
     private ScheduledExecutorService botPresenceUpdater;
+    private final AuthenticationService authenticationService = new AuthenticationService();
     private long startedAtMillis;
 
     public synchronized void start(BridgeConfig config, MinecraftMessageSink minecraftSink, Supplier<DiscordBridgeClient> clientFactory) throws Exception {
@@ -30,10 +31,23 @@ public final class BridgeController {
             ServerStatusProvider statusProvider,
             Supplier<DiscordBridgeClient> clientFactory
     ) throws Exception {
+        start(config, minecraftSink, statusProvider, clientFactory, null);
+    }
+
+    public synchronized void start(
+            BridgeConfig config,
+            MinecraftMessageSink minecraftSink,
+            ServerStatusProvider statusProvider,
+            Supplier<DiscordBridgeClient> clientFactory,
+            AuthenticationStore authenticationStore
+    ) throws Exception {
         stop();
         this.config = Objects.requireNonNull(config);
         this.minecraftSink = Objects.requireNonNull(minecraftSink);
         this.statusProvider = Objects.requireNonNull(statusProvider);
+        if (config.authentication().enabled()) {
+            authenticationService.start(Objects.requireNonNull(authenticationStore, "authenticationStore"));
+        }
         this.client = Objects.requireNonNull(clientFactory.get());
         this.client.start(config, this::onDiscordMessage);
         this.startedAtMillis = System.currentTimeMillis();
@@ -48,6 +62,7 @@ public final class BridgeController {
         stopTopicUpdater();
         stopChannelNameUpdater();
         stopBotPresenceUpdater();
+        authenticationService.stop();
         if (client != null) {
             client.close();
             client = null;
@@ -88,6 +103,14 @@ public final class BridgeController {
             return;
         }
         sendEvent(MessageFormatter.format(current.playerJoinMessage(), Map.of("player", player)));
+    }
+
+    public AuthenticationDecision authenticateLogin(String playerUuid, String player) {
+        BridgeConfig current = config;
+        if (!isRunning() || current == null) {
+            return AuthenticationDecision.allow();
+        }
+        return authenticationService.checkLogin(current, playerUuid, player);
     }
 
     public void onPlayerLeft(String player) {
@@ -161,8 +184,22 @@ public final class BridgeController {
 
     private void onDiscordMessage(DiscordInboundMessage inbound) {
         BridgeConfig current = config;
+        DiscordBridgeClient currentClient = client;
+        if (current != null && current.authentication().enabled() && inbound.privateMessage()) {
+            java.util.Optional<String> reply = authenticationService.handlePrivateMessage(current, inbound);
+            if (reply.isPresent()) {
+                if (currentClient != null && BridgeConfig.hasText(reply.get())) {
+                    currentClient.sendDirectMessage(inbound.authorId(), inbound.channelId(), reply.get());
+                }
+                return;
+            }
+            if (!inbound.bridgeToMinecraft()) {
+                return;
+            }
+        }
+
         MinecraftMessageSink sink = minecraftSink;
-        if (!isRunning() || current == null || sink == null || !current.syncChat() || !current.syncDiscordToMinecraftChat()) {
+        if (!isRunning() || current == null || sink == null || !inbound.bridgeToMinecraft() || !current.syncChat() || !current.syncDiscordToMinecraftChat()) {
             return;
         }
         String template = inbound.hasReplyAuthor() ? current.discordReplyToMinecraftFormat() : current.discordToMinecraftFormat();

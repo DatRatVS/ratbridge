@@ -24,6 +24,7 @@ final class BridgeConfigFileTest {
         assertTrue(Files.exists(configDir.resolve("topic-updater.toml")));
         assertTrue(Files.exists(configDir.resolve("channel-updaters.toml")));
         assertTrue(Files.exists(configDir.resolve("bot-presence.toml")));
+        assertTrue(Files.exists(configDir.resolve("authentication.toml")));
         assertEquals("discord", loaded.client());
         assertEquals("bot", loaded.mode());
         assertEquals("RATBRIDGE_DISCORD_TOKEN", loaded.tokenEnv());
@@ -39,6 +40,9 @@ final class BridgeConfigFileTest {
         assertEquals(0, loaded.channelNameUpdaters().size());
         assertEquals(false, loaded.botPresenceEnabled());
         assertEquals(0, loaded.botPresenceUpdates().size());
+        assertEquals(false, loaded.authentication().enabled());
+        assertEquals(10, loaded.authentication().codeTtlMinutes());
+        assertEquals("r!logout", loaded.authentication().logoutCommand());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals("[Discord] <{author}> replied to <{replyAuthor}>: {message}", loaded.discordReplyToMinecraftFormat());
@@ -103,6 +107,17 @@ final class BridgeConfigFileTest {
                 StreamUrl = "https://twitch.tv/datrat"
                 UpdateInterval = 60
                 """);
+        Files.writeString(configDir.resolve("authentication.toml"), """
+                authenticationEnabled = true
+                authenticationCodeTtlMinutes = 15
+                authenticationKickMessage = "Use code {code}\\nPlayer {player}"
+                authenticationSuccessMessage = "Linked {player}"
+                authenticationInvalidCodeMessage = "Bad code"
+                authenticationAlreadyLinkedMessage = "Already linked"
+                authenticationLogoutCommand = "r!logout"
+                authenticationLogoutSuccessMessage = "Logged out"
+                authenticationLogoutNotLinkedMessage = "Not linked"
+                """);
         Files.writeString(configDir.resolve("messages.toml"), """
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
                 discordReplyToMinecraftFormat = "[Discord] {author} -> {replyAuthor}: {message}"
@@ -141,6 +156,10 @@ final class BridgeConfigFileTest {
         assertEquals("AWAY", loaded.botPresenceUpdates().get(1).onlineStatus());
         assertEquals("STREAMING", loaded.botPresenceUpdates().get(1).activityType());
         assertEquals("https://twitch.tv/datrat", loaded.botPresenceUpdates().get(1).streamUrl());
+        assertEquals(true, loaded.authentication().enabled());
+        assertEquals(15, loaded.authentication().codeTtlMinutes());
+        assertEquals("Use code {code}\nPlayer {player}", loaded.authentication().kickMessage());
+        assertEquals("Logged out", loaded.authentication().logoutSuccessMessage());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals("[Discord] {author} -> {replyAuthor}: {message}", loaded.discordReplyToMinecraftFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());

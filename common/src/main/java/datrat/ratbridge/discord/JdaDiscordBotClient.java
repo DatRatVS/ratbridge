@@ -43,7 +43,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     @Override
     public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) throws Exception {
         String token = config.resolvedToken(System::getenv);
-        EnumSet<GatewayIntent> intents = EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
+        EnumSet<GatewayIntent> intents = EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
 
         this.jda = JDABuilder.createLight(token, intents)
                 .addEventListeners(new ListenerAdapter() {
@@ -100,6 +100,28 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                             future.complete(null);
                         }
                 );
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> sendDirectMessage(String userId, String channelId, String message) {
+        if (jda == null || !BridgeConfig.hasText(userId) || !BridgeConfig.hasText(message)) {
+            return CompletableFuture.completedFuture(null);
+        }
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        jda.openPrivateChannelById(userId).queue(
+                channel -> channel.sendMessage(message).queue(
+                        sent -> future.complete(null),
+                        error -> {
+                            LOGGER.warn("Failed to send Discord private message", error);
+                            future.complete(null);
+                        }
+                ),
+                error -> {
+                    LOGGER.warn("Failed to open Discord private channel", error);
+                    future.complete(null);
+                }
+        );
         return future;
     }
 
@@ -199,15 +221,6 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     private static void handleMessage(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer, MessageReceivedEvent event) {
-        if (!event.isFromGuild()) {
-            return;
-        }
-        if (!event.getGuild().getId().equals(config.serverId())) {
-            return;
-        }
-        if (!event.getChannel().getId().equals(config.channelId())) {
-            return;
-        }
         if (event.getAuthor().isBot()) {
             return;
         }
@@ -220,9 +233,29 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         if (!attachments.isBlank()) {
             content = content.isBlank() ? attachments : content + " " + attachments;
         }
-        if (!content.isBlank()) {
-            acceptInboundMessage(inboundConsumer, event, message, content);
+        if (content.isBlank()) {
+            return;
         }
+
+        if (!event.isFromGuild()) {
+            inboundConsumer.accept(new DiscordInboundMessage(
+                    event.getAuthor().getEffectiveName(),
+                    content,
+                    "",
+                    event.getAuthor().getId(),
+                    event.getChannel().getId(),
+                    true,
+                    false
+            ));
+            return;
+        }
+        if (!event.getGuild().getId().equals(config.serverId())) {
+            return;
+        }
+        if (!event.getChannel().getId().equals(config.channelId())) {
+            return;
+        }
+        acceptInboundMessage(inboundConsumer, event, message, content);
     }
 
     private static void acceptInboundMessage(
@@ -232,21 +265,23 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
             String content
     ) {
         String author = event.getAuthor().getEffectiveName();
+        String authorId = event.getAuthor().getId();
+        String channelId = event.getChannel().getId();
         Message referenced = message.getReferencedMessage();
         if (referenced != null) {
-            inboundConsumer.accept(new DiscordInboundMessage(author, content, referenced.getAuthor().getEffectiveName()));
+            inboundConsumer.accept(new DiscordInboundMessage(author, content, referenced.getAuthor().getEffectiveName(), authorId, channelId, false, true));
             return;
         }
 
         MessageReference reference = message.getMessageReference();
         if (reference == null) {
-            inboundConsumer.accept(new DiscordInboundMessage(author, content));
+            inboundConsumer.accept(new DiscordInboundMessage(author, content, "", authorId, channelId, false, true));
             return;
         }
 
         reference.resolve().queue(
-                resolved -> inboundConsumer.accept(new DiscordInboundMessage(author, content, resolved.getAuthor().getEffectiveName())),
-                error -> inboundConsumer.accept(new DiscordInboundMessage(author, content))
+                resolved -> inboundConsumer.accept(new DiscordInboundMessage(author, content, resolved.getAuthor().getEffectiveName(), authorId, channelId, false, true)),
+                error -> inboundConsumer.accept(new DiscordInboundMessage(author, content, "", authorId, channelId, false, true))
         );
     }
 

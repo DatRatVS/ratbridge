@@ -146,3 +146,13 @@ K - Discord bot online status and status text: ✅
 
 L - Put channel and topic updaters in their own .toml files: ✅
   . Self explanatory
+
+M - Discord driven "whitelist" or better said, authentication: ✅
+  . When enabled if the user isn't already in the authenticated list, the server auto disconnects the user
+  . The disconnection screen message is a message (customizable with break line support) telling the user to send a six digit code to the bot's DM
+  . With that six digit code the user just sends it to the bot's DM and the bot responds with a customizable message (but you make the default one)
+  . Implement F2, a logout command that you can send to the bot's DM, that will force the player to initiate in the workflow again (and may or may not use another account)
+  . Caution with account duplication, a minecraft account that has been authenticated, cannot authenticate with another discord account
+    A authenticated discord account cannot be used to authenticate with another minecraft account as well.
+    So 1 minecraft account is limited to 1 discord account and etc
+  . Make it customizable please

@@ -25,6 +25,7 @@ public record BridgeConfig(
         List<ChannelNameUpdaterConfig> channelNameUpdaters,
         boolean botPresenceEnabled,
         List<BotPresenceConfig> botPresenceUpdates,
+        AuthenticationConfig authentication,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
         boolean syncDiscordToMinecraftChat,
@@ -173,6 +174,21 @@ public record BridgeConfig(
 
         if ("selfbot".equals(resolvedMode) && selfbotPollIntervalMillis < 500) {
             errors.add("selfbotPollIntervalMillis must be at least 500");
+        }
+
+        if (authentication.enabled()) {
+            if (authentication.codeTtlMinutes() < 1) {
+                errors.add("authenticationCodeTtlMinutes must be at least 1");
+            }
+            if (!hasText(authentication.kickMessage())) {
+                errors.add("authenticationKickMessage is required when authentication is enabled");
+            }
+            if (!hasText(authentication.successMessage())) {
+                errors.add("authenticationSuccessMessage is required when authentication is enabled");
+            }
+            if (!hasText(authentication.logoutCommand())) {
+                errors.add("authenticationLogoutCommand is required when authentication is enabled");
+            }
         }
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.invalid(errors);
