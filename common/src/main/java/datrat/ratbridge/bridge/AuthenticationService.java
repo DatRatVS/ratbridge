@@ -41,7 +41,8 @@ public final class AuthenticationService {
                 "player", minecraftName,
                 "uuid", minecraftUuid,
                 "code", code,
-                "logoutCommand", authentication.logoutCommand()
+                "logoutCommand", authentication.logoutCommand(),
+                "logoutcommand", authentication.logoutCommand()
         ));
         return AuthenticationDecision.deny(message);
     }

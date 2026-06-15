@@ -128,14 +128,14 @@ F - Commands: ✅
         . Has a master switch that disables the command in the config files
         . Shows online players, and deletes the message after a couple of seconds
         Message could be like:
-        (Case has online players: `**%playercount% online player[s]:** {player}, {player}, {player}`)
+        (Case has online players: `**%playercount% online player[s]:** %player%, %player%, %player%`)
         (Case no online players: `**No online players.**`)
         . These messages should be editable on messages.toml with placeholder support.
     F2 = r!logout
 
 G - Discord message reply to minecraft: ✅
     . Show in discord that a message from said user was replied to
-    Probably like: `[Discord] {@messager} replied to {@replied-messager}: {message}`
+    Probably like: `[Discord] %messager% replied to %replied-messager%: %message%`
     and editable in messages.toml with placeholder support.
 
 K - Discord bot online status and status text: ✅
@@ -159,3 +159,9 @@ M - Discord driven "whitelist" or better said, authentication: ✅
     A authenticated discord account cannot be used to authenticate with another minecraft account as well.
     So 1 minecraft account is limited to 1 discord account and etc
   . Make it customizable please
+
+N - Defaultize placeholders' special character to %: ✅
+  . There are some placeholders that are using {} instead of defaulting to %%
+  . There are placeholders in some files that doesn't have a list of which placeholders they can use.
+    Please, include at least one list in every file, and if some placeholder that shows on the top of the .toml
+    file isn't compatible with one string that is located below, specify it

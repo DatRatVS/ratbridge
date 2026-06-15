@@ -12,7 +12,7 @@ public record DiscordCommandConfig(
                 true,
                 "r!online",
                 10,
-                "**{playercount} online player{playerPlural}:** {players}",
+                "**%playercount% online player%playerplural%:** %players%",
                 "**No online players.**"
         );
     }

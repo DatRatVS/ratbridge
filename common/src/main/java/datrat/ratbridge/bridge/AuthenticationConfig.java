@@ -15,8 +15,8 @@ public record AuthenticationConfig(
         return new AuthenticationConfig(
                 false,
                 10,
-                "This server requires Discord authentication. Send code {code} to the RatBridge bot DM to authenticate {player}.",
-                "Authenticated {player}. You can now join the server.",
+                "This server requires Discord authentication. Send code %code% to the RatBridge bot DM to authenticate %player%.",
+                "Authenticated %player%. You can now join the server.",
                 "Invalid or expired authentication code.",
                 "That Minecraft or Discord account is already linked to another account.",
                 "r!logout",

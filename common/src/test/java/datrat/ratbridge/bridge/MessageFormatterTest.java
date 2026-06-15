@@ -19,6 +19,16 @@ final class MessageFormatterTest {
     }
 
     @Test
+    void replacesPercentPlaceholders() {
+        String formatted = MessageFormatter.format("[MC] <%player%> %message%", Map.of(
+                "player", "Steve",
+                "message", "Hello"
+        ));
+
+        assertEquals("[MC] <Steve> Hello", formatted);
+    }
+
+    @Test
     void sanitizesDiscordMassMentions() {
         String sanitized = MentionSanitizer.sanitize("@everyone hi @here");
 

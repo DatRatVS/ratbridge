@@ -210,6 +210,7 @@ public final class BridgeController {
         String formatted = MessageFormatter.format(template, Map.of(
                 "author", inbound.author(),
                 "replyAuthor", inbound.replyAuthor(),
+                "replyauthor", inbound.replyAuthor(),
                 "message", inbound.content()
         ));
         sink.sendSystemMessage(formatted);
@@ -243,6 +244,7 @@ public final class BridgeController {
         return MessageFormatter.format(template, Map.of(
                 "playercount", Integer.toString(playerCount),
                 "playerPlural", playerCount == 1 ? "" : "s",
+                "playerplural", playerCount == 1 ? "" : "s",
                 "players", String.join(", ", players)
         ));
     }

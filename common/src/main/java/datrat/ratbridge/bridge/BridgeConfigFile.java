@@ -155,14 +155,14 @@ public final class BridgeConfigFile {
                 bool(values, "syncServerStart", true),
                 bool(values, "syncServerStop", true),
                 integer(values, "selfbotPollIntervalMillis", 750),
-                string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}"),
-                string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}"),
-                string(values, "discordReplyToMinecraftFormat", "[Discord] <{author}> replied to <{replyAuthor}>: {message}"),
-                string(values, "eventFormat", "[MC] {message}"),
-                string(values, "playerJoinMessage", "{player} joined the game"),
-                string(values, "playerLeaveMessage", "{player} left the game"),
-                string(values, "playerDeathMessage", "{message}"),
-                string(values, "playerAdvancementMessage", "{player} has made the advancement [{advancement}]"),
+                string(values, "minecraftToDiscordFormat", "[MC] <%player%> %message%"),
+                string(values, "discordToMinecraftFormat", "[Discord] <%author%> %message%"),
+                string(values, "discordReplyToMinecraftFormat", "[Discord] <%author%> replied to <%replyauthor%>: %message%"),
+                string(values, "eventFormat", "[MC] %message%"),
+                string(values, "playerJoinMessage", "%player% joined the game"),
+                string(values, "playerLeaveMessage", "%player% left the game"),
+                string(values, "playerDeathMessage", "%message%"),
+                string(values, "playerAdvancementMessage", "%player% has made the advancement [%advancement%]"),
                 string(values, "serverStartMessage", "Server started"),
                 string(values, "serverStopMessage", "Server stopping")
         );
@@ -357,6 +357,9 @@ public final class BridgeConfigFile {
                 + "channelNameUpdatersEnabled = " + boolString(values, "channelNameUpdatersEnabled", false) + "\n"
                 + "\n"
                 + "# Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.\n"
+                + "# Placeholders: %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%\n"
+                + "# Memory placeholders in MB: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%\n"
+                + "# Memory placeholders in GB: %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%\n"
                 + "# Minimum update interval is 5 minutes; 6+ is recommended because Discord heavily rate-limits channel renames.\n"
                 + "# ChannelId: Discord channel ID to rename.\n"
                 + "# Message: Channel name while the Minecraft server is online.\n"
@@ -391,6 +394,9 @@ public final class BridgeConfigFile {
                 + "# OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.\n"
                 + "# ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.\n"
                 + "# Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.\n"
+                + "# Placeholders: %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%\n"
+                + "# Memory placeholders in MB: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%\n"
+                + "# Memory placeholders in GB: %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%\n"
                 + "# StreamUrl: required only when ActivityType = STREAMING.\n"
                 + "# UpdateInterval: seconds before RatBridge moves to the next block. Minimum: 30.\n"
                 + "# Example:\n"
@@ -426,12 +432,12 @@ public final class BridgeConfigFile {
                 + "\n"
                 + "# Message shown on the Minecraft disconnect screen while the account is not authenticated.\n"
                 + "# Use \\n inside the string for line breaks.\n"
-                + "# Placeholders: {player}, {uuid}, {code}, {logoutCommand}\n"
-                + "authenticationKickMessage = " + quote(string(values, "authenticationKickMessage", "This server requires Discord authentication.\nSend code {code} to the RatBridge bot DM to authenticate {player}.")) + "\n"
+                + "# Placeholders: %player%, %uuid%, %code%, %logoutcommand%\n"
+                + "authenticationKickMessage = " + quote(string(values, "authenticationKickMessage", "This server requires Discord authentication.\nSend code %code% to the RatBridge bot DM to authenticate %player%.")) + "\n"
                 + "\n"
                 + "# DM response after a code is accepted.\n"
-                + "# Placeholders: {player}, {discord}, {code}\n"
-                + "authenticationSuccessMessage = " + quote(string(values, "authenticationSuccessMessage", "Authenticated {player}. You can now join the server.")) + "\n"
+                + "# Placeholders: %player%, %discord%, %code%\n"
+                + "authenticationSuccessMessage = " + quote(string(values, "authenticationSuccessMessage", "Authenticated %player%. You can now join the server.")) + "\n"
                 + "\n"
                 + "# DM response when the user sends an invalid or expired six digit code.\n"
                 + "authenticationInvalidCodeMessage = " + quote(string(values, "authenticationInvalidCodeMessage", "Invalid or expired authentication code.")) + "\n"
@@ -482,41 +488,41 @@ public final class BridgeConfigFile {
                 + "onlineCommandDeleteAfterSeconds = " + integer(values, "onlineCommandDeleteAfterSeconds", 10) + "\n"
                 + "\n"
                 + "# Online command response when at least one player is online.\n"
-                + "# Available placeholders: {playercount}, {playerPlural}, {players}\n"
-                + "onlinePlayersMessage = " + quote(string(values, "onlinePlayersMessage", "**{playercount} online player{playerPlural}:** {players}")) + "\n"
+                + "# Available placeholders: %playercount%, %playerplural%, %players%\n"
+                + "onlinePlayersMessage = " + quote(string(values, "onlinePlayersMessage", "**%playercount% online player%playerplural%:** %players%")) + "\n"
                 + "\n"
                 + "# Online command response when no players are online.\n"
-                + "# Available placeholders: {playercount}, {playerPlural}, {players}\n"
+                + "# Available placeholders: %playercount%, %playerplural%, %players%\n"
                 + "onlineNoPlayersMessage = " + quote(string(values, "onlineNoPlayersMessage", "**No online players.**")) + "\n"
                 + "\n"
                 + "# Message formats.\n"
                 + "# minecraftToDiscordFormat is used for Minecraft player chat sent to Discord.\n"
-                + "# Available placeholders: {player}, {message}\n"
-                + "minecraftToDiscordFormat = " + quote(string(values, "minecraftToDiscordFormat", "[MC] <{player}> {message}")) + "\n"
+                + "# Available placeholders: %player%, %message%\n"
+                + "minecraftToDiscordFormat = " + quote(string(values, "minecraftToDiscordFormat", "[MC] <%player%> %message%")) + "\n"
                 + "\n"
                 + "# discordToMinecraftFormat is used for Discord messages shown in Minecraft.\n"
-                + "# Available placeholders: {author}, {message}\n"
-                + "discordToMinecraftFormat = " + quote(string(values, "discordToMinecraftFormat", "[Discord] <{author}> {message}")) + "\n"
+                + "# Available placeholders: %author%, %message%\n"
+                + "discordToMinecraftFormat = " + quote(string(values, "discordToMinecraftFormat", "[Discord] <%author%> %message%")) + "\n"
                 + "\n"
                 + "# discordReplyToMinecraftFormat is used for Discord reply messages shown in Minecraft.\n"
-                + "# Available placeholders: {author}, {replyAuthor}, {message}\n"
-                + "discordReplyToMinecraftFormat = " + quote(string(values, "discordReplyToMinecraftFormat", "[Discord] <{author}> replied to <{replyAuthor}>: {message}")) + "\n"
+                + "# Available placeholders: %author%, %replyauthor%, %message%\n"
+                + "discordReplyToMinecraftFormat = " + quote(string(values, "discordReplyToMinecraftFormat", "[Discord] <%author%> replied to <%replyauthor%>: %message%")) + "\n"
                 + "\n"
                 + "# eventFormat wraps server lifecycle and player join/leave messages before sending to Discord.\n"
-                + "# Available placeholders: {message}\n"
-                + "eventFormat = " + quote(string(values, "eventFormat", "[MC] {message}")) + "\n"
+                + "# Available placeholders: %message%\n"
+                + "eventFormat = " + quote(string(values, "eventFormat", "[MC] %message%")) + "\n"
                 + "\n"
                 + "# Event message text before eventFormat is applied.\n"
-                + "# playerJoinMessage and playerLeaveMessage support: {player}\n"
-                + "playerJoinMessage = " + quote(string(values, "playerJoinMessage", "{player} joined the game")) + "\n"
-                + "playerLeaveMessage = " + quote(string(values, "playerLeaveMessage", "{player} left the game")) + "\n"
+                + "# playerJoinMessage and playerLeaveMessage support: %player%\n"
+                + "playerJoinMessage = " + quote(string(values, "playerJoinMessage", "%player% joined the game")) + "\n"
+                + "playerLeaveMessage = " + quote(string(values, "playerLeaveMessage", "%player% left the game")) + "\n"
                 + "\n"
-                + "# Death event text. Available placeholders: {player}, {message}\n"
-                + "# {message} is Minecraft's localized vanilla death message, for example: Steve fell from a high place.\n"
-                + "playerDeathMessage = " + quote(string(values, "playerDeathMessage", "{message}")) + "\n"
+                + "# Death event text. Available placeholders: %player%, %message%\n"
+                + "# %message% is Minecraft's localized vanilla death message, for example: Steve fell from a high place.\n"
+                + "playerDeathMessage = " + quote(string(values, "playerDeathMessage", "%message%")) + "\n"
                 + "\n"
-                + "# Advancement event text. Available placeholders: {player}, {advancement}, {description}\n"
-                + "playerAdvancementMessage = " + quote(string(values, "playerAdvancementMessage", "{player} has made the advancement [{advancement}]")) + "\n"
+                + "# Advancement event text. Available placeholders: %player%, %advancement%, %description%\n"
+                + "playerAdvancementMessage = " + quote(string(values, "playerAdvancementMessage", "%player% has made the advancement [%advancement%]")) + "\n"
                 + "\n"
                 + "# Server lifecycle messages. No placeholders yet.\n"
                 + "serverStartMessage = " + quote(string(values, "serverStartMessage", "Server started")) + "\n"

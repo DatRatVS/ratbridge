@@ -147,6 +147,9 @@ topicUpdaterIntervalMinutes = 6
 channelNameUpdatersEnabled = false
 
 # Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.
+# Available placeholders include:
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
 # Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.
 # ChannelId: Discord channel ID to rename.
 # Message: Channel name while the Minecraft server is online.
@@ -179,6 +182,9 @@ botPresenceEnabled = false
 # OnlineStatus: ONLINE, IDLE, AWAY, DND, DO_NOT_DISTURB, or INVISIBLE.
 # ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.
 # Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.
+# Available placeholders include:
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
 # StreamUrl: required only when ActivityType = STREAMING.
 # UpdateInterval: seconds before RatBridge moves to the next block. Minimum: 30.
 
@@ -206,11 +212,11 @@ authenticationEnabled = false
 authenticationCodeTtlMinutes = 10
 
 # Minecraft disconnect screen text. Use \n for line breaks.
-# Placeholders: {player}, {uuid}, {code}, {logoutCommand}
-authenticationKickMessage = "This server requires Discord authentication.\nSend code {code} to the RatBridge bot DM to authenticate {player}."
+# Placeholders: %player%, %uuid%, %code%, %logoutcommand%
+authenticationKickMessage = "This server requires Discord authentication.\nSend code %code% to the RatBridge bot DM to authenticate %player%."
 
 # Discord DM responses.
-authenticationSuccessMessage = "Authenticated {player}. You can now join the server."
+authenticationSuccessMessage = "Authenticated %player%. You can now join the server."
 authenticationInvalidCodeMessage = "Invalid or expired authentication code."
 authenticationAlreadyLinkedMessage = "That Minecraft or Discord account is already linked to another account."
 
@@ -223,6 +229,8 @@ authenticationLogoutNotLinkedMessage = "Your Discord account is not linked to an
 When authentication is enabled, RatBridge stores accepted links in `authentication-users.toml`. That file is managed by the mod. One Minecraft account can link to one Discord account, and one Discord account can link to one Minecraft account.
 
 `messages.toml` holds listener toggles and editable message text:
+
+RatBridge defaults to `%placeholder%` syntax. Existing configs that still use `{placeholder}` remain supported for message formats.
 
 ```toml
 # Toggles for each synced listener/event type.
@@ -243,30 +251,30 @@ syncServerStop = true
 commandsEnabled = true
 onlineCommand = "r!online"
 onlineCommandDeleteAfterSeconds = 10
-onlinePlayersMessage = "**{playercount} online player{playerPlural}:** {players}"
+onlinePlayersMessage = "**%playercount% online player%playerplural%:** %players%"
 onlineNoPlayersMessage = "**No online players.**"
 
-# Minecraft -> Discord chat. Placeholders: {player}, {message}
-minecraftToDiscordFormat = "[MC] <{player}> {message}"
+# Minecraft -> Discord chat. Placeholders: %player%, %message%
+minecraftToDiscordFormat = "[MC] <%player%> %message%"
 
-# Discord -> Minecraft chat. Placeholders: {author}, {message}
-discordToMinecraftFormat = "[Discord] <{author}> {message}"
+# Discord -> Minecraft chat. Placeholders: %author%, %message%
+discordToMinecraftFormat = "[Discord] <%author%> %message%"
 
-# Discord reply -> Minecraft chat. Placeholders: {author}, {replyAuthor}, {message}
-discordReplyToMinecraftFormat = "[Discord] <{author}> replied to <{replyAuthor}>: {message}"
+# Discord reply -> Minecraft chat. Placeholders: %author%, %replyauthor%, %message%
+discordReplyToMinecraftFormat = "[Discord] <%author%> replied to <%replyauthor%>: %message%"
 
-# Wrapper for event messages. Placeholder: {message}
-eventFormat = "[MC] {message}"
+# Wrapper for event messages. Placeholder: %message%
+eventFormat = "[MC] %message%"
 
-# Join/leave event text. Placeholder: {player}
-playerJoinMessage = "{player} joined the game"
-playerLeaveMessage = "{player} left the game"
+# Join/leave event text. Placeholder: %player%
+playerJoinMessage = "%player% joined the game"
+playerLeaveMessage = "%player% left the game"
 
-# Death event text. Placeholders: {player}, {message}
-playerDeathMessage = "{message}"
+# Death event text. Placeholders: %player%, %message%
+playerDeathMessage = "%message%"
 
-# Advancement event text. Placeholders: {player}, {advancement}, {description}
-playerAdvancementMessage = "{player} has made the advancement [{advancement}]"
+# Advancement event text. Placeholders: %player%, %advancement%, %description%
+playerAdvancementMessage = "%player% has made the advancement [%advancement%]"
 
 # Server lifecycle event text.
 serverStartMessage = "Server started"
@@ -343,9 +351,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.11.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.11.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.11.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.12.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.12.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.12.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

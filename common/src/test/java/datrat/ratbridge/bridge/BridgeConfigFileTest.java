@@ -46,15 +46,15 @@ final class BridgeConfigFileTest {
         assertEquals(true, loaded.discordCommands().enabled());
         assertEquals("r!online", loaded.discordCommands().onlineCommand());
         assertEquals(10, loaded.discordCommands().onlineDeleteAfterSeconds());
-        assertEquals("**{playercount} online player{playerPlural}:** {players}", loaded.discordCommands().onlinePlayersMessage());
+        assertEquals("**%playercount% online player%playerplural%:** %players%", loaded.discordCommands().onlinePlayersMessage());
         assertEquals("**No online players.**", loaded.discordCommands().onlineNoPlayersMessage());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
-        assertEquals("[Discord] <{author}> replied to <{replyAuthor}>: {message}", loaded.discordReplyToMinecraftFormat());
+        assertEquals("[Discord] <%author%> replied to <%replyauthor%>: %message%", loaded.discordReplyToMinecraftFormat());
         assertEquals(true, loaded.syncPlayerDeath());
         assertEquals(true, loaded.syncPlayerAdvancement());
-        assertEquals("{message}", loaded.playerDeathMessage());
-        assertEquals("{player} has made the advancement [{advancement}]", loaded.playerAdvancementMessage());
+        assertEquals("%message%", loaded.playerDeathMessage());
+        assertEquals("%player% has made the advancement [%advancement%]", loaded.playerAdvancementMessage());
         assertEquals("Server stopping", loaded.serverStopMessage());
     }
 
