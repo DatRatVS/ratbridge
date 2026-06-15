@@ -2,6 +2,7 @@ package datrat.ratbridge.platform.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -156,7 +158,8 @@ public final class RatBridgeFabric implements ModInitializer {
                         new FabricMinecraftMessageSink(server),
                         new FabricServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore()
+                        authenticationStore(),
+                        logout -> disconnectAuthenticatedPlayer(server, logout)
                 );
                 if (!serverAvailable.get()) {
                     bridge.stop();
@@ -193,7 +196,8 @@ public final class RatBridgeFabric implements ModInitializer {
                         new FabricMinecraftMessageSink(server),
                         new FabricServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore()
+                        authenticationStore(),
+                        logout -> disconnectAuthenticatedPlayer(server, logout)
             );
             if (!reloaded) {
                 bridge.onServerStarted();
@@ -224,5 +228,18 @@ public final class RatBridgeFabric implements ModInitializer {
 
     private AuthenticationStore authenticationStore() {
         return new AuthenticationStore(FabricLoader.getInstance().getConfigDir().resolve("ratbridge").resolve("authentication-users.toml"));
+    }
+
+    private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {
+        server.execute(() -> {
+            try {
+                ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(logout.minecraftUuid()));
+                if (player != null) {
+                    player.connection.disconnect(Component.literal(logout.disconnectMessage()));
+                }
+            } catch (IllegalArgumentException error) {
+                LOGGER.warn("Cannot disconnect logged out player with invalid UUID {}", logout.minecraftUuid());
+            }
+        });
     }
 }

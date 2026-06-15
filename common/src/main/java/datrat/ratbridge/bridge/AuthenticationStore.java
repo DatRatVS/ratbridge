@@ -81,14 +81,14 @@ public final class AuthenticationStore {
         write();
     }
 
-    public synchronized boolean unlinkByDiscordUserId(String discordUserId) throws IOException {
+    public synchronized Optional<AuthenticatedAccount> unlinkByDiscordUserId(String discordUserId) throws IOException {
         String minecraftUuid = minecraftUuidByDiscordUserId.remove(discordUserId);
         if (minecraftUuid == null) {
-            return false;
+            return Optional.empty();
         }
-        byMinecraftUuid.remove(minecraftUuid);
+        AuthenticatedAccount removed = byMinecraftUuid.remove(minecraftUuid);
         write();
-        return true;
+        return Optional.ofNullable(removed);
     }
 
     private void put(AuthenticatedAccount account) {

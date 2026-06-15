@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -184,13 +185,15 @@ final class BridgeControllerTest {
     void authenticationLinksAndLogsOutThroughPrivateDiscordMessages() throws Exception {
         BridgeController controller = new BridgeController();
         FakeDiscordClient client = new FakeDiscordClient();
+        List<AuthenticationLogout> logouts = new ArrayList<>();
 
         controller.start(
                 authConfig(),
                 message -> { },
                 ServerStatusProvider.empty(),
                 () -> client,
-                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml")),
+                logouts::add
         );
 
         AuthenticationDecision firstJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
@@ -205,6 +208,10 @@ final class BridgeControllerTest {
 
         client.receive(new DiscordInboundMessage("Alex", "r!logout", "", "discord-1", "dm-1", true, false));
         assertEquals("Your Minecraft account link was removed. Join the server again to get a new code.", client.directMessage);
+        assertEquals(1, logouts.size());
+        assertEquals("minecraft-uuid", logouts.get(0).minecraftUuid());
+        assertEquals("Steve", logouts.get(0).minecraftName());
+        assertEquals("Your Minecraft account link was removed. Join the server again to get a new code.", logouts.get(0).disconnectMessage());
 
         AuthenticationDecision thirdJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
         assertFalse(thirdJoin.allowed());

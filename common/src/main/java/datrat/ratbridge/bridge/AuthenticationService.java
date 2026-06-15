@@ -47,7 +47,7 @@ public final class AuthenticationService {
         return AuthenticationDecision.deny(message);
     }
 
-    public synchronized Optional<String> handlePrivateMessage(BridgeConfig config, DiscordInboundMessage message) {
+    public synchronized Optional<AuthenticationMessageResponse> handlePrivateMessage(BridgeConfig config, DiscordInboundMessage message) {
         AuthenticationConfig authentication = config.authentication();
         if (!authentication.enabled() || store == null || !BridgeConfig.hasText(message.authorId())) {
             return Optional.empty();
@@ -60,15 +60,22 @@ public final class AuthenticationService {
         if (!content.matches("\\d{6}")) {
             return Optional.empty();
         }
-        return Optional.of(handleCode(authentication, message, content));
+        return Optional.of(AuthenticationMessageResponse.reply(handleCode(authentication, message, content)));
     }
 
-    private String handleLogout(AuthenticationConfig authentication, DiscordInboundMessage message) {
+    private AuthenticationMessageResponse handleLogout(AuthenticationConfig authentication, DiscordInboundMessage message) {
         try {
-            boolean removed = store.unlinkByDiscordUserId(message.authorId());
-            return removed ? authentication.logoutSuccessMessage() : authentication.logoutNotLinkedMessage();
+            Optional<AuthenticationStore.AuthenticatedAccount> removed = store.unlinkByDiscordUserId(message.authorId());
+            if (removed.isEmpty()) {
+                return AuthenticationMessageResponse.reply(authentication.logoutNotLinkedMessage());
+            }
+            AuthenticationStore.AuthenticatedAccount account = removed.get();
+            return AuthenticationMessageResponse.logout(
+                    authentication.logoutSuccessMessage(),
+                    new AuthenticationLogout(account.minecraftUuid(), account.minecraftName(), authentication.logoutSuccessMessage())
+            );
         } catch (IOException error) {
-            return "RatBridge could not update the authentication database. Check the server log.";
+            return AuthenticationMessageResponse.reply("RatBridge could not update the authentication database. Check the server log.");
         }
     }
 

@@ -6,6 +6,7 @@ import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
 import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.TpsMonitor;
 import datrat.ratbridge.bridge.ValidationResult;
@@ -29,6 +30,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,7 +74,8 @@ public final class ForgeServerEvents {
                     new MinecraftServerMessageSink(event.getServer()),
                     new ForgeServerStatusProvider(event.getServer(), tpsMonitor),
                     () -> DiscordClientFactory.create(config),
-                    authenticationStore()
+                    authenticationStore(),
+                    logout -> disconnectAuthenticatedPlayer(event.getServer(), logout)
             );
             bridge.onServerStarted();
             RatBridge.LOGGER.info("RatBridge started with client={} mode={}", config.client(), config.mode());
@@ -202,7 +205,8 @@ public final class ForgeServerEvents {
                         new MinecraftServerMessageSink(server),
                         new ForgeServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore()
+                        authenticationStore(),
+                        logout -> disconnectAuthenticatedPlayer(server, logout)
                 );
                 if (!serverAvailable.get()) {
                     bridge.stop();
@@ -228,5 +232,18 @@ public final class ForgeServerEvents {
 
     private AuthenticationStore authenticationStore() {
         return new AuthenticationStore(FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve("authentication-users.toml"));
+    }
+
+    private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {
+        server.execute(() -> {
+            try {
+                ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(logout.minecraftUuid()));
+                if (player != null) {
+                    player.connection.disconnect(Component.literal(logout.disconnectMessage()));
+                }
+            } catch (IllegalArgumentException error) {
+                RatBridge.LOGGER.warn("Cannot disconnect logged out player with invalid UUID {}", logout.minecraftUuid());
+            }
+        });
     }
 }

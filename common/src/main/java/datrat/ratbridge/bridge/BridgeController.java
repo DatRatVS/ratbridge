@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class BridgeController {
@@ -20,6 +21,7 @@ public final class BridgeController {
     private ScheduledExecutorService channelNameUpdater;
     private ScheduledExecutorService botPresenceUpdater;
     private final AuthenticationService authenticationService = new AuthenticationService();
+    private Consumer<AuthenticationLogout> authenticationLogoutConsumer = logout -> { };
     private long startedAtMillis;
 
     public synchronized void start(BridgeConfig config, MinecraftMessageSink minecraftSink, Supplier<DiscordBridgeClient> clientFactory) throws Exception {
@@ -42,10 +44,22 @@ public final class BridgeController {
             Supplier<DiscordBridgeClient> clientFactory,
             AuthenticationStore authenticationStore
     ) throws Exception {
+        start(config, minecraftSink, statusProvider, clientFactory, authenticationStore, logout -> { });
+    }
+
+    public synchronized void start(
+            BridgeConfig config,
+            MinecraftMessageSink minecraftSink,
+            ServerStatusProvider statusProvider,
+            Supplier<DiscordBridgeClient> clientFactory,
+            AuthenticationStore authenticationStore,
+            Consumer<AuthenticationLogout> authenticationLogoutConsumer
+    ) throws Exception {
         stop();
         this.config = Objects.requireNonNull(config);
         this.minecraftSink = Objects.requireNonNull(minecraftSink);
         this.statusProvider = Objects.requireNonNull(statusProvider);
+        this.authenticationLogoutConsumer = Objects.requireNonNull(authenticationLogoutConsumer);
         if (config.authentication().enabled()) {
             authenticationService.start(Objects.requireNonNull(authenticationStore, "authenticationStore"));
         }
@@ -71,6 +85,7 @@ public final class BridgeController {
         minecraftSink = null;
         config = null;
         statusProvider = ServerStatusProvider.empty();
+        authenticationLogoutConsumer = logout -> { };
         startedAtMillis = 0L;
     }
 
@@ -190,11 +205,13 @@ public final class BridgeController {
             return;
         }
         if (current != null && current.authentication().enabled() && inbound.privateMessage()) {
-            java.util.Optional<String> reply = authenticationService.handlePrivateMessage(current, inbound);
-            if (reply.isPresent()) {
-                if (currentClient != null && BridgeConfig.hasText(reply.get())) {
-                    currentClient.sendDirectMessage(inbound.authorId(), inbound.channelId(), reply.get());
+            java.util.Optional<AuthenticationMessageResponse> response = authenticationService.handlePrivateMessage(current, inbound);
+            if (response.isPresent()) {
+                AuthenticationMessageResponse authenticationResponse = response.get();
+                if (currentClient != null && BridgeConfig.hasText(authenticationResponse.replyMessage())) {
+                    currentClient.sendDirectMessage(inbound.authorId(), inbound.channelId(), authenticationResponse.replyMessage());
                 }
+                authenticationResponse.logout().ifPresent(authenticationLogoutConsumer);
                 return;
             }
             if (!inbound.bridgeToMinecraft()) {
