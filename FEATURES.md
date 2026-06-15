@@ -173,3 +173,5 @@ O - Fixes: ✅
          Instead make a toggleable and customizeable message that sends in the chat once an unauthenticated
          user tries to log into the server. ✅
     O3 . Put `authentication-users.toml` inside of /data/ folder ✅
+    O4 . Include a (toggleable, like a dropdown clickable item) table on the readme.md showing features available to bot and selfbot comparing them both ✅
+    O5 . Seems like the selfbot mode really doesn't need a server id, even when needing to communicate in a server, but it should need. It should only ignore serverid if the chat is a DM or group DM ✅

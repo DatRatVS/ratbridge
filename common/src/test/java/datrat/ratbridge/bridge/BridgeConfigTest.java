@@ -42,7 +42,7 @@ final class BridgeConfigTest {
     }
 
     @Test
-    void selfbotDoesNotRequireGuild() {
+    void selfbotCanOmitGuildUntilChannelTypeIsKnownAtRuntime() {
         BridgeConfig config = base("selfbot", "abc", "", "456", true);
 
         ValidationResult result = config.validate(emptyEnv());

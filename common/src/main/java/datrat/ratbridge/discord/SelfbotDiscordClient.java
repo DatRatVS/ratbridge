@@ -42,6 +42,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private String token;
     private String selfUserId;
     private String lastMessageId;
+    private ChannelContext channelContext = ChannelContext.privateChannel();
 
     @Override
     public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) throws Exception {
@@ -51,6 +52,8 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         this.token = config.resolvedToken(System::getenv);
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.selfUserId = fetchSelfUserId();
+        this.channelContext = fetchChannelContext();
+        validateChannelContext(config, channelContext);
         this.poller = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "RatBridge-Selfbot-Poller");
             thread.setDaemon(true);
@@ -249,13 +252,46 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         String authorName = author == null ? "Discord" : displayName(author);
         String replyAuthorName = referencedAuthorName(message);
         String authorId = author == null ? "" : getString(author, "id");
-        inboundConsumer.accept(new DiscordInboundMessage(authorName, content, replyAuthorName, authorId, config.channelId(), true, true));
+        inboundConsumer.accept(new DiscordInboundMessage(authorName, content, replyAuthorName, authorId, config.channelId(), channelContext.privateMessage(), true));
+    }
+
+    private ChannelContext fetchChannelContext() throws IOException, InterruptedException {
+        HttpRequest request = baseRequest(channelUri(""))
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException("Discord selfbot channel lookup failed with HTTP " + response.statusCode());
+        }
+        return channelContextFrom(JsonParser.parseString(response.body()).getAsJsonObject());
+    }
+
+    private static void validateChannelContext(BridgeConfig config, ChannelContext context) {
+        if (context.privateMessage()) {
+            return;
+        }
+        if (!BridgeConfig.hasText(config.serverId())) {
+            throw new IllegalStateException("serverId is required in selfbot mode when channelId points to a Discord server/guild channel");
+        }
+        if (!config.serverId().trim().equals(context.guildId())) {
+            throw new IllegalStateException("Discord selfbot channel belongs to guild/server " + context.guildId()
+                    + " but serverId is " + config.serverId().trim());
+        }
+    }
+
+    static ChannelContext channelContextFrom(JsonObject channel) {
+        String guildId = getString(channel, "guild_id");
+        if (BridgeConfig.hasText(guildId)) {
+            return new ChannelContext(false, guildId);
+        }
+        return ChannelContext.privateChannel();
     }
 
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.17");
+                .header("User-Agent", "RatBridge/0.1.18");
     }
 
     private URI channelUri(String suffix) {
@@ -311,5 +347,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
             return "";
         }
         return object.get(key).getAsString();
+    }
+
+    record ChannelContext(boolean privateMessage, String guildId) {
+        private static ChannelContext privateChannel() {
+            return new ChannelContext(true, "");
+        }
     }
 }

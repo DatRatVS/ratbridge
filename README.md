@@ -60,7 +60,7 @@ mode = "selfbot"
 
 Bot mode requires a Discord bot token, a guild/server id, and a channel id. The bot ignores messages from other bots to prevent loops.
 
-Selfbot mode supports DMs and Group DMs through a channel id. It is disabled unless `enableSelfbot = true`.
+Selfbot mode supports DMs and Group DMs through a channel id. It can also poll a server/guild channel, but then `serverId` is required and must match the channel's guild. Selfbot mode is disabled unless `enableSelfbot = true`.
 
 Discord forbids automated normal user accounts/selfbots. Using selfbot mode can get the Discord account banned. RatBridge does not include bypass, evasion, anti-detection, or spam behavior.
 
@@ -71,7 +71,7 @@ Discord forbids automated normal user accounts/selfbots. Using selfbot mode can 
 | --- | --- | --- |
 | Minecraft chat -> Discord | Yes | Yes |
 | Discord chat -> Minecraft | Yes | Yes |
-| Discord server/guild channel bridge | Yes, requires `serverId` and `channelId` | Not intended as the primary mode yet |
+| Discord server/guild channel bridge | Yes, requires `serverId` and `channelId` | Limited; requires `serverId` and `channelId` |
 | Discord DM and Group DM bridge | No | Yes, requires `channelId` |
 | Player join/leave/death/advancement events -> Discord | Yes | Yes |
 | Server start/stop events -> Discord | Yes | Yes |
@@ -110,7 +110,7 @@ enabled = true
 # External client. Currently supported: "discord".
 client = "discord"
 
-# Discord mode: "bot" for a normal Discord bot, "selfbot" for DM/Group DM polling.
+# Discord mode: "bot" for a normal Discord bot, "selfbot" for channel polling with a user token.
 # Selfbot mode can get the Discord account banned.
 mode = "bot"
 
@@ -120,10 +120,14 @@ token = ""
 # Environment variable name used when token is empty.
 tokenEnv = "RATBRIDGE_DISCORD_TOKEN"
 
-# Required in bot mode. Copy it from Discord developer mode.
+# Required in bot mode.
+# In selfbot mode, required only when channelId is a server/guild channel; ignored for DM/Group DM channels.
+# Copy it from Discord developer mode.
 serverId = ""
 
-# Required in bot and selfbot mode. Bot mode uses a server text channel; selfbot uses DM/Group DM channel IDs.
+# Required in bot and selfbot mode.
+# Bot mode uses a server text channel.
+# Selfbot mode uses a DM, Group DM, or server/guild text channel ID.
 channelId = ""
 
 # Required safety gate for selfbot mode.
@@ -324,7 +328,8 @@ For selfbot mode:
 - `enableSelfbot = true` is required.
 - `token` or `tokenEnv` is required.
 - `channelId` is required.
-- `selfbotPollIntervalMillis` controls DM/Group DM polling delay. The minimum is `500`.
+- `serverId` is required only when `channelId` points to a server/guild channel. It is ignored for DM and Group DM channels.
+- `selfbotPollIntervalMillis` controls polling delay. The minimum is `500`.
 
 For webhook delivery:
 
@@ -381,9 +386,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.17.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.17.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.17.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.18.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.18.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.18.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.
