@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -79,7 +80,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         targetChannel.sendMessage(message).queue(
                 sent -> future.complete(null),
                 error -> {
-                    LOGGER.warn("Failed to send Discord bot message", error);
+                    logRestFailure("Failed to send Discord bot message", error);
                     future.complete(null);
                 }
         );
@@ -98,7 +99,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                 .queue(
                         sent -> future.complete(null),
                         error -> {
-                            LOGGER.warn("Failed to send Discord webhook message", error);
+                            logRestFailure("Failed to send Discord webhook message", error);
                             future.complete(null);
                         }
                 );
@@ -115,12 +116,12 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                 channel -> channel.sendMessage(message).queue(
                         sent -> future.complete(null),
                         error -> {
-                            LOGGER.warn("Failed to send Discord private message", error);
+                            logRestFailure("Failed to send Discord private message", error);
                             future.complete(null);
                         }
                 ),
                 error -> {
-                    LOGGER.warn("Failed to open Discord private channel", error);
+                    logRestFailure("Failed to open Discord private channel", error);
                     future.complete(null);
                 }
         );
@@ -142,11 +143,11 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                             Math.max(1L, deleteAfter.toSeconds()),
                             TimeUnit.SECONDS,
                             ignored -> { },
-                            error -> LOGGER.warn("Failed to delete temporary Discord message", error)
+                            error -> logRestFailure("Failed to delete temporary Discord message", error)
                     );
                 },
                 error -> {
-                    LOGGER.warn("Failed to send temporary Discord message", error);
+                    logRestFailure("Failed to send temporary Discord message", error);
                     future.complete(null);
                 }
         );
@@ -173,7 +174,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         channel.getManager().setTopic(boundedTopic).queue(
                 ignored -> future.complete(null),
                 error -> {
-                    LOGGER.warn("Failed to update Discord channel topic", error);
+                    logRestFailure("Failed to update Discord channel topic", error);
                     future.complete(null);
                 }
         );
@@ -200,7 +201,7 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
         channel.getManager().setName(boundedName).queue(
                 ignored -> future.complete(null),
                 error -> {
-                    LOGGER.warn("Failed to update Discord channel name", error);
+                    logRestFailure("Failed to update Discord channel name", error);
                     future.complete(null);
                 }
         );
@@ -390,5 +391,13 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static void logRestFailure(String message, Throwable error) {
+        if (error instanceof CancellationException) {
+            LOGGER.debug("{}: RestAction was cancelled during Discord client shutdown", message);
+            return;
+        }
+        LOGGER.warn(message, error);
     }
 }
