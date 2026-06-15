@@ -29,9 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RatBridgeFabric implements ModInitializer {
@@ -42,6 +44,7 @@ public final class RatBridgeFabric implements ModInitializer {
 
     private final BridgeController bridge = new BridgeController();
     private final TpsMonitor tpsMonitor = new TpsMonitor();
+    private final Set<UUID> authenticationRejectedPlayers = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicBoolean serverAvailable = new AtomicBoolean(false);
     private final ExecutorService reloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
@@ -61,7 +64,7 @@ public final class RatBridgeFabric implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 onPlayerJoined(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                bridge.onPlayerLeft(handler.player.getGameProfile().getName()));
+                onPlayerDisconnected(handler.player));
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayer player) {
                 String deathMessage = damageSource.getLocalizedDeathMessage(player).getString();
@@ -220,10 +223,22 @@ public final class RatBridgeFabric implements ModInitializer {
                 player.getGameProfile().getName()
         );
         if (!decision.allowed()) {
+            authenticationRejectedPlayers.add(player.getGameProfile().getId());
+            bridge.onUnauthenticatedLogin(
+                    player.getGameProfile().getId().toString(),
+                    player.getGameProfile().getName()
+            );
             player.connection.disconnect(Component.literal(decision.disconnectMessage()));
             return;
         }
         bridge.onPlayerJoined(player.getGameProfile().getName());
+    }
+
+    private void onPlayerDisconnected(ServerPlayer player) {
+        if (authenticationRejectedPlayers.remove(player.getGameProfile().getId())) {
+            return;
+        }
+        bridge.onPlayerLeft(player.getGameProfile().getName());
     }
 
     private AuthenticationStore authenticationStore() {

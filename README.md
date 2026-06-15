@@ -211,6 +211,13 @@ authenticationEnabled = false
 # Minutes before an unused join code expires.
 authenticationCodeTtlMinutes = 10
 
+# Sends a Discord event when an unauthenticated player attempts to join.
+authenticationUnauthenticatedLoginMessageEnabled = true
+
+# Discord event text for unauthenticated join attempts.
+# Placeholders: %player%, %uuid%
+authenticationUnauthenticatedLoginMessage = "%player% tried to join but is not authenticated yet."
+
 # Minecraft disconnect screen text. Use \n for line breaks.
 # Placeholders: %player%, %uuid%, %code%, %logoutcommand%
 authenticationKickMessage = "This server requires Discord authentication.\nSend code %code% to the RatBridge bot DM to authenticate %player%."

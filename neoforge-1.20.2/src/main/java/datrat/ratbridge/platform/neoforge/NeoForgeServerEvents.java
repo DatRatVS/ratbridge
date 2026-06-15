@@ -30,14 +30,17 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class NeoForgeServerEvents {
     private final BridgeController bridge = new BridgeController();
     private final TpsMonitor tpsMonitor = new TpsMonitor();
+    private final Set<UUID> authenticationRejectedPlayers = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicBoolean serverAvailable = new AtomicBoolean(false);
     private final ExecutorService reloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
@@ -121,6 +124,11 @@ public final class NeoForgeServerEvents {
                     player.getGameProfile().getName()
             );
             if (!decision.allowed()) {
+                authenticationRejectedPlayers.add(player.getGameProfile().getId());
+                bridge.onUnauthenticatedLogin(
+                        player.getGameProfile().getId().toString(),
+                        player.getGameProfile().getName()
+                );
                 player.connection.disconnect(Component.literal(decision.disconnectMessage()));
                 return;
             }
@@ -131,6 +139,9 @@ public final class NeoForgeServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            if (authenticationRejectedPlayers.remove(player.getGameProfile().getId())) {
+                return;
+            }
             bridge.onPlayerLeft(player.getGameProfile().getName());
         }
     }

@@ -129,6 +129,18 @@ public final class BridgeController {
         return authenticationService.checkLogin(current, playerUuid, player);
     }
 
+    public void onUnauthenticatedLogin(String playerUuid, String player) {
+        BridgeConfig current = config;
+        if (!isRunning() || current == null || !current.authentication().enabled()
+                || !current.authentication().unauthenticatedLoginMessageEnabled()) {
+            return;
+        }
+        sendEvent(MessageFormatter.format(current.authentication().unauthenticatedLoginMessage(), Map.of(
+                "player", player,
+                "uuid", playerUuid
+        )));
+    }
+
     public void onPlayerLeft(String player) {
         BridgeConfig current = config;
         if (!isRunning() || current == null || !current.syncPlayerLeave()) {

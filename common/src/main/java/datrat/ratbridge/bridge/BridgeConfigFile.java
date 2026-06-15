@@ -430,6 +430,14 @@ public final class BridgeConfigFile {
                 + "# Minutes before an unused join code expires. A new code is generated on the next join attempt.\n"
                 + "authenticationCodeTtlMinutes = " + integer(values, "authenticationCodeTtlMinutes", 10) + "\n"
                 + "\n"
+                + "# Sends a Discord event when an unauthenticated player attempts to join.\n"
+                + "# This replaces the misleading leave message caused by the server disconnecting the player during login.\n"
+                + "authenticationUnauthenticatedLoginMessageEnabled = " + boolString(values, "authenticationUnauthenticatedLoginMessageEnabled", true) + "\n"
+                + "\n"
+                + "# Discord event text for unauthenticated join attempts.\n"
+                + "# Placeholders: %player%, %uuid%\n"
+                + "authenticationUnauthenticatedLoginMessage = " + quote(string(values, "authenticationUnauthenticatedLoginMessage", "%player% tried to join but is not authenticated yet.")) + "\n"
+                + "\n"
                 + "# Message shown on the Minecraft disconnect screen while the account is not authenticated.\n"
                 + "# Use \\n inside the string for line breaks.\n"
                 + "# Placeholders: %player%, %uuid%, %code%, %logoutcommand%\n"
@@ -628,6 +636,8 @@ public final class BridgeConfigFile {
         return new AuthenticationConfig(
                 bool(values, "authenticationEnabled", fallback.enabled()),
                 integer(values, "authenticationCodeTtlMinutes", fallback.codeTtlMinutes()),
+                bool(values, "authenticationUnauthenticatedLoginMessageEnabled", fallback.unauthenticatedLoginMessageEnabled()),
+                string(values, "authenticationUnauthenticatedLoginMessage", fallback.unauthenticatedLoginMessage()),
                 string(values, "authenticationKickMessage", fallback.kickMessage()),
                 string(values, "authenticationSuccessMessage", fallback.successMessage()),
                 string(values, "authenticationInvalidCodeMessage", fallback.invalidCodeMessage()),

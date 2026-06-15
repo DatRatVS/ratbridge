@@ -171,5 +171,5 @@ O - Fixes:
     O2 . With authentication toggled on, an unauthenticated user generates a *left the server* message
          in the bridge discord chat and it should not (It does not generate a *joined the server* message)
          Instead make a toggleable and customizeable message that sends in the chat once an unauthenticated
-         user tries to log into the server.
+         user tries to log into the server. ✅
     O3 . Put `authentication-users.toml` inside of /data/ folder

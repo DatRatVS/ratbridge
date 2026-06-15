@@ -219,6 +219,25 @@ final class BridgeControllerTest {
     }
 
     @Test
+    void unauthenticatedLoginSendsConfigurableDiscordEvent() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(
+                authConfig(),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+        );
+
+        controller.onUnauthenticatedLogin("minecraft-uuid", "Steve");
+
+        assertEquals("[MC] Steve needs Discord authentication", client.normalMessage);
+        controller.stop();
+    }
+
+    @Test
     void onlineCommandRepliesTemporarilyWithOnlinePlayers() throws Exception {
         BridgeController controller = new BridgeController();
         FakeDiscordClient client = new FakeDiscordClient();
@@ -327,6 +346,8 @@ final class BridgeControllerTest {
                 new AuthenticationConfig(
                         true,
                         10,
+                        true,
+                        "{player} needs Discord authentication",
                         "Code {code} for {player}",
                         "Authenticated {player}. You can now join the server.",
                         "Invalid or expired authentication code.",

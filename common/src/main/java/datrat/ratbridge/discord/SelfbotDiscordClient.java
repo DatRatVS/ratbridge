@@ -255,7 +255,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.13");
+                .header("User-Agent", "RatBridge/0.1.14");
     }
 
     private URI channelUri(String suffix) {

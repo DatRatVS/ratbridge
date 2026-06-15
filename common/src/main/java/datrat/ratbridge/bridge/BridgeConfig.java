@@ -190,6 +190,9 @@ public record BridgeConfig(
             if (!hasText(authentication.logoutCommand())) {
                 errors.add("authenticationLogoutCommand is required when authentication is enabled");
             }
+            if (authentication.unauthenticatedLoginMessageEnabled() && !hasText(authentication.unauthenticatedLoginMessage())) {
+                errors.add("authenticationUnauthenticatedLoginMessage is required when authenticationUnauthenticatedLoginMessageEnabled is true");
+            }
         }
 
         if (discordCommands.enabled()) {

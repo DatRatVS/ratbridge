@@ -42,6 +42,8 @@ final class BridgeConfigFileTest {
         assertEquals(0, loaded.botPresenceUpdates().size());
         assertEquals(false, loaded.authentication().enabled());
         assertEquals(10, loaded.authentication().codeTtlMinutes());
+        assertEquals(true, loaded.authentication().unauthenticatedLoginMessageEnabled());
+        assertEquals("%player% tried to join but is not authenticated yet.", loaded.authentication().unauthenticatedLoginMessage());
         assertEquals("r!logout", loaded.authentication().logoutCommand());
         assertEquals(true, loaded.discordCommands().enabled());
         assertEquals("r!online", loaded.discordCommands().onlineCommand());
@@ -115,6 +117,8 @@ final class BridgeConfigFileTest {
         Files.writeString(configDir.resolve("authentication.toml"), """
                 authenticationEnabled = true
                 authenticationCodeTtlMinutes = 15
+                authenticationUnauthenticatedLoginMessageEnabled = false
+                authenticationUnauthenticatedLoginMessage = "{player} needs auth"
                 authenticationKickMessage = "Use code {code}\\nPlayer {player}"
                 authenticationSuccessMessage = "Linked {player}"
                 authenticationInvalidCodeMessage = "Bad code"
@@ -168,6 +172,8 @@ final class BridgeConfigFileTest {
         assertEquals("https://twitch.tv/datrat", loaded.botPresenceUpdates().get(1).streamUrl());
         assertEquals(true, loaded.authentication().enabled());
         assertEquals(15, loaded.authentication().codeTtlMinutes());
+        assertEquals(false, loaded.authentication().unauthenticatedLoginMessageEnabled());
+        assertEquals("{player} needs auth", loaded.authentication().unauthenticatedLoginMessage());
         assertEquals("Use code {code}\nPlayer {player}", loaded.authentication().kickMessage());
         assertEquals("Logged out", loaded.authentication().logoutSuccessMessage());
         assertEquals(true, loaded.discordCommands().enabled());

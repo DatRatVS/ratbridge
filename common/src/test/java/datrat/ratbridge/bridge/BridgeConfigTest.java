@@ -263,7 +263,7 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
-                new AuthenticationConfig(true, 0, "", "", "bad", "linked", "", "out", "none"),
+                new AuthenticationConfig(true, 0, true, "", "", "", "bad", "linked", "", "out", "none"),
                 DiscordCommandConfig.defaults(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -277,6 +277,7 @@ final class BridgeConfigTest {
         assertTrue(result.errors().contains("authenticationKickMessage is required when authentication is enabled"));
         assertTrue(result.errors().contains("authenticationSuccessMessage is required when authentication is enabled"));
         assertTrue(result.errors().contains("authenticationLogoutCommand is required when authentication is enabled"));
+        assertTrue(result.errors().contains("authenticationUnauthenticatedLoginMessage is required when authenticationUnauthenticatedLoginMessageEnabled is true"));
     }
 
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {
