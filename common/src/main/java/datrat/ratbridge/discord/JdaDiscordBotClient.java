@@ -23,11 +23,13 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -119,6 +121,32 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                 ),
                 error -> {
                     LOGGER.warn("Failed to open Discord private channel", error);
+                    future.complete(null);
+                }
+        );
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> sendTemporaryMessage(String channelId, String message, Duration deleteAfter) {
+        MessageChannel channel = resolveMessageChannel(channelId);
+        if (channel == null || !BridgeConfig.hasText(message)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        channel.sendMessage(message).queue(
+                sent -> {
+                    future.complete(null);
+                    sent.delete().queueAfter(
+                            Math.max(1L, deleteAfter.toSeconds()),
+                            TimeUnit.SECONDS,
+                            ignored -> { },
+                            error -> LOGGER.warn("Failed to delete temporary Discord message", error)
+                    );
+                },
+                error -> {
+                    LOGGER.warn("Failed to send temporary Discord message", error);
                     future.complete(null);
                 }
         );
@@ -218,6 +246,16 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
                 .sorted(Comparator.comparing(Webhook::getId))
                 .findFirst()
                 .orElseGet(() -> webhookContainer.createWebhook(config.webhookName()).complete());
+    }
+
+    private MessageChannel resolveMessageChannel(String channelId) {
+        if (jda != null && BridgeConfig.hasText(channelId)) {
+            MessageChannel channel = jda.getChannelById(MessageChannel.class, channelId);
+            if (channel != null) {
+                return channel;
+            }
+        }
+        return targetChannel;
     }
 
     private static void handleMessage(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer, MessageReceivedEvent event) {

@@ -144,6 +144,7 @@ public final class BridgeConfigFile {
                 bool(values, "botPresenceEnabled", integer(values, "botPresenceCount", 0) > 0),
                 botPresenceUpdates(values),
                 authenticationConfig(values),
+                discordCommandConfig(values),
                 bool(values, "syncChat", true),
                 bool(values, "syncMinecraftToDiscordChat", true),
                 bool(values, "syncDiscordToMinecraftChat", true),
@@ -470,6 +471,24 @@ public final class BridgeConfigFile {
                 + "syncServerStart = " + boolString(values, "syncServerStart", true) + "\n"
                 + "syncServerStop = " + boolString(values, "syncServerStop", true) + "\n"
                 + "\n"
+                + "# Discord command settings.\n"
+                + "# commandsEnabled is the master switch for Discord text commands handled by RatBridge.\n"
+                + "commandsEnabled = " + boolString(values, "commandsEnabled", true) + "\n"
+                + "\n"
+                + "# Command users can send in the configured bridge channel to see online Minecraft players.\n"
+                + "onlineCommand = " + quote(string(values, "onlineCommand", "r!online")) + "\n"
+                + "\n"
+                + "# Seconds before RatBridge deletes its online command response. Minimum: 1.\n"
+                + "onlineCommandDeleteAfterSeconds = " + integer(values, "onlineCommandDeleteAfterSeconds", 10) + "\n"
+                + "\n"
+                + "# Online command response when at least one player is online.\n"
+                + "# Available placeholders: {playercount}, {playerPlural}, {players}\n"
+                + "onlinePlayersMessage = " + quote(string(values, "onlinePlayersMessage", "**{playercount} online player{playerPlural}:** {players}")) + "\n"
+                + "\n"
+                + "# Online command response when no players are online.\n"
+                + "# Available placeholders: {playercount}, {playerPlural}, {players}\n"
+                + "onlineNoPlayersMessage = " + quote(string(values, "onlineNoPlayersMessage", "**No online players.**")) + "\n"
+                + "\n"
                 + "# Message formats.\n"
                 + "# minecraftToDiscordFormat is used for Minecraft player chat sent to Discord.\n"
                 + "# Available placeholders: {player}, {message}\n"
@@ -610,6 +629,17 @@ public final class BridgeConfigFile {
                 string(values, "authenticationLogoutCommand", fallback.logoutCommand()),
                 string(values, "authenticationLogoutSuccessMessage", fallback.logoutSuccessMessage()),
                 string(values, "authenticationLogoutNotLinkedMessage", fallback.logoutNotLinkedMessage())
+        );
+    }
+
+    private static DiscordCommandConfig discordCommandConfig(Map<String, String> values) {
+        DiscordCommandConfig fallback = DiscordCommandConfig.defaults();
+        return new DiscordCommandConfig(
+                bool(values, "commandsEnabled", fallback.enabled()),
+                string(values, "onlineCommand", fallback.onlineCommand()),
+                integer(values, "onlineCommandDeleteAfterSeconds", fallback.onlineDeleteAfterSeconds()),
+                string(values, "onlinePlayersMessage", fallback.onlinePlayersMessage()),
+                string(values, "onlineNoPlayersMessage", fallback.onlineNoPlayersMessage())
         );
     }
 

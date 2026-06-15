@@ -26,6 +26,7 @@ public record BridgeConfig(
         boolean botPresenceEnabled,
         List<BotPresenceConfig> botPresenceUpdates,
         AuthenticationConfig authentication,
+        DiscordCommandConfig discordCommands,
         boolean syncChat,
         boolean syncMinecraftToDiscordChat,
         boolean syncDiscordToMinecraftChat,
@@ -188,6 +189,21 @@ public record BridgeConfig(
             }
             if (!hasText(authentication.logoutCommand())) {
                 errors.add("authenticationLogoutCommand is required when authentication is enabled");
+            }
+        }
+
+        if (discordCommands.enabled()) {
+            if (!hasText(discordCommands.onlineCommand())) {
+                errors.add("onlineCommand is required when discord commands are enabled");
+            }
+            if (discordCommands.onlineDeleteAfterSeconds() < 1) {
+                errors.add("onlineCommandDeleteAfterSeconds must be at least 1");
+            }
+            if (!hasText(discordCommands.onlinePlayersMessage())) {
+                errors.add("onlinePlayersMessage is required when discord commands are enabled");
+            }
+            if (!hasText(discordCommands.onlineNoPlayersMessage())) {
+                errors.add("onlineNoPlayersMessage is required when discord commands are enabled");
             }
         }
 

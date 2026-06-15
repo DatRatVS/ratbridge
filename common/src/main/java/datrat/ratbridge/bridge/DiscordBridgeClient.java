@@ -17,6 +17,10 @@ public interface DiscordBridgeClient extends AutoCloseable {
         return sendMessage(message);
     }
 
+    default CompletableFuture<Void> sendTemporaryMessage(String channelId, String message, Duration deleteAfter) {
+        return sendMessage(message);
+    }
+
     default CompletableFuture<Void> updateChannelTopic(String channelId, String topic) {
         return CompletableFuture.completedFuture(null);
     }

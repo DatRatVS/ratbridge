@@ -8,8 +8,10 @@ import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class ForgeServerStatusProvider implements ServerStatusProvider {
@@ -34,6 +36,27 @@ public final class ForgeServerStatusProvider implements ServerStatusProvider {
         } catch (Exception ignored) {
             return fallbackSnapshot(uptimeMillis);
         }
+    }
+
+    @Override
+    public List<String> onlinePlayerNames() {
+        if (server.isSameThread()) {
+            return readOnlinePlayerNames();
+        }
+
+        CompletableFuture<List<String>> future = new CompletableFuture<>();
+        server.execute(() -> future.complete(readOnlinePlayerNames()));
+        try {
+            return future.get(2, TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+            return List.of();
+        }
+    }
+
+    private List<String> readOnlinePlayerNames() {
+        return server.getPlayerList().getPlayers().stream()
+                .map(player -> player.getGameProfile().getName())
+                .collect(Collectors.toList());
     }
 
     private ServerStatusSnapshot readSnapshot(long uptimeMillis) {

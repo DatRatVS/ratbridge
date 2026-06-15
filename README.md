@@ -37,6 +37,7 @@ A Minecraft `1.20.x` server-side bridge for synchronizing Minecraft server chat 
 - **Channel Topic Updater**: Updates a Discord channel topic with server status placeholders.
 - **Channel Name Updaters**: Updates one or more Discord channel names with server status placeholders.
 - **Bot Presence Rotation**: Updates Discord bot online status and activity text with server status placeholders.
+- **Discord Commands**: Handles `r!online` in the bridge channel and temporary online-player responses.
 - **Bot Mode**: Uses a normal Discord bot token through JDA.
 - **Selfbot Mode**: Optional DM and Group DM polling mode using a user token and channel id.
 - **Runtime Reload**: Adds `/ratbridge reload` for OPs to reload config and reconnect Discord without restarting the server.
@@ -238,6 +239,13 @@ syncPlayerAdvancement = true
 syncServerStart = true
 syncServerStop = true
 
+# Discord text commands handled in the configured bridge channel.
+commandsEnabled = true
+onlineCommand = "r!online"
+onlineCommandDeleteAfterSeconds = 10
+onlinePlayersMessage = "**{playercount} online player{playerPlural}:** {players}"
+onlineNoPlayersMessage = "**No online players.**"
+
 # Minecraft -> Discord chat. Placeholders: {player}, {message}
 minecraftToDiscordFormat = "[MC] <{player}> {message}"
 
@@ -292,7 +300,7 @@ Invalid config disables the bridge and logs a clear error without crashing the M
 
 ## Commands
 
-RatBridge registers one command:
+RatBridge registers one Minecraft server command:
 
 ```text
 /ratbridge reload
@@ -306,6 +314,11 @@ Reload behavior:
 - Reloads the RatBridge split config files, including `authentication.toml`.
 - Validates the new config.
 - Reconnects Discord asynchronously so the server thread does not wait on Discord login.
+
+RatBridge also handles Discord commands:
+
+- `r!online` must be sent in the configured bridge channel. It responds with the current online Minecraft players and deletes the response after `onlineCommandDeleteAfterSeconds`.
+- `r!logout` must be sent in the bot DM. It removes the current Discord account link when authentication is enabled.
 
 ## Limits
 
@@ -330,9 +343,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.10.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.10.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.10.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.11.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.11.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.11.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

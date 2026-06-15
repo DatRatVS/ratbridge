@@ -43,6 +43,11 @@ final class BridgeConfigFileTest {
         assertEquals(false, loaded.authentication().enabled());
         assertEquals(10, loaded.authentication().codeTtlMinutes());
         assertEquals("r!logout", loaded.authentication().logoutCommand());
+        assertEquals(true, loaded.discordCommands().enabled());
+        assertEquals("r!online", loaded.discordCommands().onlineCommand());
+        assertEquals(10, loaded.discordCommands().onlineDeleteAfterSeconds());
+        assertEquals("**{playercount} online player{playerPlural}:** {players}", loaded.discordCommands().onlinePlayersMessage());
+        assertEquals("**No online players.**", loaded.discordCommands().onlineNoPlayersMessage());
         assertEquals(true, loaded.syncMinecraftToDiscordChat());
         assertEquals(true, loaded.syncDiscordToMinecraftChat());
         assertEquals("[Discord] <{author}> replied to <{replyAuthor}>: {message}", loaded.discordReplyToMinecraftFormat());
@@ -119,6 +124,11 @@ final class BridgeConfigFileTest {
                 authenticationLogoutNotLinkedMessage = "Not linked"
                 """);
         Files.writeString(configDir.resolve("messages.toml"), """
+                commandsEnabled = true
+                onlineCommand = "!online"
+                onlineCommandDeleteAfterSeconds = 3
+                onlinePlayersMessage = "{playercount}: {players}"
+                onlineNoPlayersMessage = "nobody"
                 minecraftToDiscordFormat = "[MC] {message} # not comment"
                 discordReplyToMinecraftFormat = "[Discord] {author} -> {replyAuthor}: {message}"
                 syncMinecraftToDiscordChat = false
@@ -160,6 +170,11 @@ final class BridgeConfigFileTest {
         assertEquals(15, loaded.authentication().codeTtlMinutes());
         assertEquals("Use code {code}\nPlayer {player}", loaded.authentication().kickMessage());
         assertEquals("Logged out", loaded.authentication().logoutSuccessMessage());
+        assertEquals(true, loaded.discordCommands().enabled());
+        assertEquals("!online", loaded.discordCommands().onlineCommand());
+        assertEquals(3, loaded.discordCommands().onlineDeleteAfterSeconds());
+        assertEquals("{playercount}: {players}", loaded.discordCommands().onlinePlayersMessage());
+        assertEquals("nobody", loaded.discordCommands().onlineNoPlayersMessage());
         assertEquals("[MC] {message} # not comment", loaded.minecraftToDiscordFormat());
         assertEquals("[Discord] {author} -> {replyAuthor}: {message}", loaded.discordReplyToMinecraftFormat());
         assertEquals(false, loaded.syncMinecraftToDiscordChat());

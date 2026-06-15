@@ -1,6 +1,7 @@
 package datrat.ratbridge.bridge;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -185,6 +186,9 @@ public final class BridgeController {
     private void onDiscordMessage(DiscordInboundMessage inbound) {
         BridgeConfig current = config;
         DiscordBridgeClient currentClient = client;
+        if (current != null && handleDiscordCommand(current, currentClient, inbound)) {
+            return;
+        }
         if (current != null && current.authentication().enabled() && inbound.privateMessage()) {
             java.util.Optional<String> reply = authenticationService.handlePrivateMessage(current, inbound);
             if (reply.isPresent()) {
@@ -209,6 +213,38 @@ public final class BridgeController {
                 "message", inbound.content()
         ));
         sink.sendSystemMessage(formatted);
+    }
+
+    private boolean handleDiscordCommand(BridgeConfig current, DiscordBridgeClient currentClient, DiscordInboundMessage inbound) {
+        if (!isRunning() || currentClient == null || !current.discordCommands().enabled()) {
+            return false;
+        }
+        if (!inbound.channelId().equals(current.channelId())) {
+            return false;
+        }
+        if (!inbound.content().trim().equalsIgnoreCase(current.discordCommands().onlineCommand().trim())) {
+            return false;
+        }
+
+        currentClient.sendTemporaryMessage(
+                inbound.channelId(),
+                MentionSanitizer.sanitize(onlinePlayersMessage(current)),
+                Duration.ofSeconds(Math.max(1, current.discordCommands().onlineDeleteAfterSeconds()))
+        );
+        return true;
+    }
+
+    private String onlinePlayersMessage(BridgeConfig current) {
+        List<String> players = statusProvider.onlinePlayerNames();
+        int playerCount = players.size();
+        String template = playerCount == 0
+                ? current.discordCommands().onlineNoPlayersMessage()
+                : current.discordCommands().onlinePlayersMessage();
+        return MessageFormatter.format(template, Map.of(
+                "playercount", Integer.toString(playerCount),
+                "playerPlural", playerCount == 1 ? "" : "s",
+                "players", String.join(", ", players)
+        ));
     }
 
     private synchronized void startTopicUpdater() {

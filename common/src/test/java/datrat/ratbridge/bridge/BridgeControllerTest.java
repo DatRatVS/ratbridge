@@ -211,6 +211,32 @@ final class BridgeControllerTest {
         controller.stop();
     }
 
+    @Test
+    void onlineCommandRepliesTemporarilyWithOnlinePlayers() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        ServerStatusProvider statusProvider = new ServerStatusProvider() {
+            @Override
+            public ServerStatusSnapshot snapshot(long uptimeMillis) {
+                return ServerStatusProvider.empty().snapshot(uptimeMillis);
+            }
+
+            @Override
+            public List<String> onlinePlayerNames() {
+                return List.of("Steve", "Alex");
+            }
+        };
+
+        controller.start(config(false), message -> { }, statusProvider, () -> client);
+        client.receive(new DiscordInboundMessage("DiscordUser", "r!online", "", "discord-1", "456", false, true));
+
+        assertEquals("456", client.temporaryChannelId);
+        assertEquals("**2 online players:** Steve, Alex", client.temporaryMessage);
+        assertEquals(10, client.temporaryDeleteAfterSeconds);
+        assertNull(client.normalMessage);
+        controller.stop();
+    }
+
     private static BridgeConfig config(boolean webhookDelivery) {
         return config(webhookDelivery, true, true);
     }
@@ -224,6 +250,7 @@ final class BridgeControllerTest {
                 false,
                 List.of(),
                 AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
                 true, syncMinecraftToDiscordChat, syncDiscordToMinecraftChat,
                 true, true, true, true, true, true,
                 750,
@@ -240,6 +267,7 @@ final class BridgeControllerTest {
                 false,
                 List.of(),
                 AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -256,6 +284,7 @@ final class BridgeControllerTest {
                 false,
                 List.of(),
                 AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -272,6 +301,7 @@ final class BridgeControllerTest {
                 true,
                 List.of(new BotPresenceConfig("DND", "WATCHING", "%playercount%/%playermax% players | TPS %tps%", "", 30)),
                 AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -298,6 +328,7 @@ final class BridgeControllerTest {
                         "Your Minecraft account link was removed. Join the server again to get a new code.",
                         "Your Discord account is not linked to any Minecraft account."
                 ),
+                DiscordCommandConfig.defaults(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
@@ -316,6 +347,9 @@ final class BridgeControllerTest {
         private String webhookPlayer;
         private String webhookMessage;
         private String directMessage;
+        private String temporaryChannelId;
+        private String temporaryMessage;
+        private long temporaryDeleteAfterSeconds;
         private Consumer<DiscordInboundMessage> inboundConsumer;
         private CompletableFuture<String> topicChannelId = new CompletableFuture<>();
         private CompletableFuture<String> topic = new CompletableFuture<>();
@@ -348,6 +382,14 @@ final class BridgeControllerTest {
         @Override
         public CompletableFuture<Void> sendDirectMessage(String userId, String channelId, String message) {
             directMessage = message;
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> sendTemporaryMessage(String channelId, String message, java.time.Duration deleteAfter) {
+            temporaryChannelId = channelId;
+            temporaryMessage = message;
+            temporaryDeleteAfterSeconds = deleteAfter.toSeconds();
             return CompletableFuture.completedFuture(null);
         }
 

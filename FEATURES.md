@@ -122,13 +122,16 @@ E - Channel name changer/writer (similar to D): ✅
     ```
       The codeblock above is an example for you, do not make it exactly as that please
 
-F - Commands
+F - Commands: ✅
     F1 - r!online
+        . Should be sent in the channel the bot has the bridge enabled
+        . Has a master switch that disables the command in the config files
         . Shows online players, and deletes the message after a couple of seconds
         Message could be like:
-        (Case has online players: `**%playercount% online player[s]:** player, player, player`)
+        (Case has online players: `**%playercount% online player[s]:** {player}, {player}, {player}`)
         (Case no online players: `**No online players.**`)
         . These messages should be editable on messages.toml with placeholder support.
+    F2 = r!logout
 
 G - Discord message reply to minecraft: ✅
     . Show in discord that a message from said user was replied to

@@ -36,6 +36,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
 
     private HttpClient http;
     private ScheduledExecutorService poller;
+    private ScheduledExecutorService temporaryMessageDeleter;
     private BridgeConfig config;
     private Consumer<DiscordInboundMessage> inboundConsumer;
     private String token;
@@ -52,6 +53,11 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
         this.selfUserId = fetchSelfUserId();
         this.poller = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "RatBridge-Selfbot-Poller");
+            thread.setDaemon(true);
+            return thread;
+        });
+        this.temporaryMessageDeleter = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "RatBridge-Selfbot-Temporary-Message-Deleter");
             thread.setDaemon(true);
             return thread;
         });
@@ -99,10 +105,50 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<Void> sendTemporaryMessage(String channelId, String message, Duration deleteAfter) {
+        String targetChannelId = BridgeConfig.hasText(channelId) ? channelId : config.channelId();
+        if (message.isBlank()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        JsonObject body = new JsonObject();
+        body.addProperty("content", message);
+        HttpRequest request = baseRequest(channelUri(targetChannelId, "/messages"))
+                .timeout(Duration.ofSeconds(10))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
+                .build();
+
+        return http.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                        LOGGER.warn("Discord selfbot temporary send failed with HTTP {}", response.statusCode());
+                        return;
+                    }
+                    String messageId = getString(JsonParser.parseString(response.body()).getAsJsonObject(), "id");
+                    if (BridgeConfig.hasText(messageId) && temporaryMessageDeleter != null) {
+                        temporaryMessageDeleter.schedule(
+                                () -> deleteMessageSafely(targetChannelId, messageId),
+                                Math.max(1L, deleteAfter.toSeconds()),
+                                TimeUnit.SECONDS
+                        );
+                    }
+                })
+                .exceptionally(error -> {
+                    LOGGER.warn("Discord selfbot temporary send failed", error);
+                    return null;
+                });
+    }
+
+    @Override
     public void close() {
         if (poller != null) {
             poller.shutdownNow();
             poller = null;
+        }
+        if (temporaryMessageDeleter != null) {
+            temporaryMessageDeleter.shutdownNow();
+            temporaryMessageDeleter = null;
         }
     }
 
@@ -209,7 +255,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.10");
+                .header("User-Agent", "RatBridge/0.1.11");
     }
 
     private URI channelUri(String suffix) {
@@ -219,6 +265,27 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private URI channelUri(String channelId, String suffix) {
         channelId = URLEncoder.encode(channelId, StandardCharsets.UTF_8);
         return URI.create(API_BASE + "/channels/" + channelId + suffix);
+    }
+
+    private void deleteMessageSafely(String channelId, String messageId) {
+        try {
+            HttpRequest request = baseRequest(channelUri(channelId, "/messages/" + URLEncoder.encode(messageId, StandardCharsets.UTF_8)))
+                    .timeout(Duration.ofSeconds(10))
+                    .DELETE()
+                    .build();
+            http.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                    .thenAccept(response -> {
+                        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                            LOGGER.warn("Discord selfbot temporary delete failed with HTTP {}", response.statusCode());
+                        }
+                    })
+                    .exceptionally(error -> {
+                        LOGGER.warn("Discord selfbot temporary delete failed", error);
+                        return null;
+                    });
+        } catch (Exception error) {
+            LOGGER.warn("Discord selfbot temporary delete failed", error);
+        }
     }
 
     private static String displayName(JsonObject author) {
