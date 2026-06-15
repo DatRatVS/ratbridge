@@ -64,6 +64,29 @@ Selfbot mode supports DMs and Group DMs through a channel id. It is disabled unl
 
 Discord forbids automated normal user accounts/selfbots. Using selfbot mode can get the Discord account banned. RatBridge does not include bypass, evasion, anti-detection, or spam behavior.
 
+<details>
+<summary>Bot mode vs selfbot mode feature matrix</summary>
+
+| Feature | Bot mode | Selfbot mode |
+| --- | --- | --- |
+| Minecraft chat -> Discord | Yes | Yes |
+| Discord chat -> Minecraft | Yes | Yes |
+| Discord server/guild channel bridge | Yes, requires `serverId` and `channelId` | Not intended as the primary mode yet |
+| Discord DM and Group DM bridge | No | Yes, requires `channelId` |
+| Player join/leave/death/advancement events -> Discord | Yes | Yes |
+| Server start/stop events -> Discord | Yes | Yes |
+| `/ratbridge reload` | Yes | Yes |
+| `r!online` command | Yes, in the configured bridge channel | Limited by polling/channel support |
+| Discord-driven authentication codes by DM | Yes | Limited; bot mode is recommended |
+| `r!logout` authentication command | Yes, in bot DM | Limited; bot mode is recommended |
+| Webhook delivery for Minecraft player chat | Yes | No |
+| Channel topic updater | Yes, requires Manage Channels permission | No |
+| Channel name updaters | Yes, requires Manage Channels permission | No |
+| Bot presence rotation | Yes | No |
+| Discord account safety | Recommended and supported by Discord bot accounts | Risky; Discord forbids selfbots and may ban the account |
+
+</details>
+
 ## Config
 
 RatBridge generates/uses:
