@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.bridge.AuthenticationDecision;
 import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
+import datrat.ratbridge.bridge.AuthenticationStorePaths;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
@@ -25,6 +26,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +163,7 @@ public final class RatBridgeFabric implements ModInitializer {
                         new FabricMinecraftMessageSink(server),
                         new FabricServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore(),
+                        authenticationStore(server),
                         logout -> disconnectAuthenticatedPlayer(server, logout)
                 );
                 if (!serverAvailable.get()) {
@@ -199,7 +201,7 @@ public final class RatBridgeFabric implements ModInitializer {
                         new FabricMinecraftMessageSink(server),
                         new FabricServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore(),
+                        authenticationStore(server),
                         logout -> disconnectAuthenticatedPlayer(server, logout)
             );
             if (!reloaded) {
@@ -241,8 +243,17 @@ public final class RatBridgeFabric implements ModInitializer {
         bridge.onPlayerLeft(player.getGameProfile().getName());
     }
 
-    private AuthenticationStore authenticationStore() {
-        return new AuthenticationStore(FabricLoader.getInstance().getConfigDir().resolve("ratbridge").resolve("authentication-users.toml"));
+    private AuthenticationStore authenticationStore(MinecraftServer server) {
+        Path targetPath = AuthenticationStorePaths.worldDataPath(server.getWorldPath(LevelResource.ROOT));
+        Path legacyPath = FabricLoader.getInstance().getConfigDir().resolve("ratbridge").resolve(AuthenticationStorePaths.FILE_NAME);
+        try {
+            if (AuthenticationStorePaths.migrateLegacyConfigPath(legacyPath, targetPath)) {
+                LOGGER.info("Migrated RatBridge authentication users from {} to {}", legacyPath, targetPath);
+            }
+        } catch (Exception error) {
+            LOGGER.warn("Could not migrate RatBridge authentication users from {} to {}; using the world data path", legacyPath, targetPath, error);
+        }
+        return new AuthenticationStore(targetPath);
     }
 
     private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {

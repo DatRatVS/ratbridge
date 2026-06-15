@@ -75,7 +75,7 @@ config/ratbridge/topic-updater.toml
 config/ratbridge/channel-updaters.toml
 config/ratbridge/bot-presence.toml
 config/ratbridge/authentication.toml
-config/ratbridge/authentication-users.toml
+<world>/data/ratbridge/authentication-users.toml
 ```
 
 `config.toml` holds connection/client settings:
@@ -233,7 +233,7 @@ authenticationLogoutSuccessMessage = "Your Minecraft account link was removed. J
 authenticationLogoutNotLinkedMessage = "Your Discord account is not linked to any Minecraft account."
 ```
 
-When authentication is enabled, RatBridge stores accepted links in `authentication-users.toml`. That file is managed by the mod. One Minecraft account can link to one Discord account, and one Discord account can link to one Minecraft account.
+When authentication is enabled, RatBridge stores accepted links in `<world>/data/ratbridge/authentication-users.toml`. That file is managed by the mod. Existing `config/ratbridge/authentication-users.toml` files are migrated automatically when possible. One Minecraft account can link to one Discord account, and one Discord account can link to one Minecraft account.
 
 `messages.toml` holds listener toggles and editable message text:
 

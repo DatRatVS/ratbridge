@@ -8,6 +8,7 @@ import datrat.ratbridge.bridge.BridgeController;
 import datrat.ratbridge.bridge.AuthenticationDecision;
 import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
+import datrat.ratbridge.bridge.AuthenticationStorePaths;
 import datrat.ratbridge.bridge.TpsMonitor;
 import datrat.ratbridge.bridge.ValidationResult;
 import datrat.ratbridge.discord.DiscordClientFactory;
@@ -18,6 +19,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -77,7 +79,7 @@ public final class ForgeServerEvents {
                     new MinecraftServerMessageSink(event.getServer()),
                     new ForgeServerStatusProvider(event.getServer(), tpsMonitor),
                     () -> DiscordClientFactory.create(config),
-                    authenticationStore(),
+                    authenticationStore(event.getServer()),
                     logout -> disconnectAuthenticatedPlayer(event.getServer(), logout)
             );
             bridge.onServerStarted();
@@ -216,7 +218,7 @@ public final class ForgeServerEvents {
                         new MinecraftServerMessageSink(server),
                         new ForgeServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore(),
+                        authenticationStore(server),
                         logout -> disconnectAuthenticatedPlayer(server, logout)
                 );
                 if (!serverAvailable.get()) {
@@ -241,8 +243,17 @@ public final class ForgeServerEvents {
         return BridgeConfigFile.loadSplit(configDirectory);
     }
 
-    private AuthenticationStore authenticationStore() {
-        return new AuthenticationStore(FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve("authentication-users.toml"));
+    private AuthenticationStore authenticationStore(MinecraftServer server) {
+        Path targetPath = AuthenticationStorePaths.worldDataPath(server.getWorldPath(LevelResource.ROOT));
+        Path legacyPath = FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve(AuthenticationStorePaths.FILE_NAME);
+        try {
+            if (AuthenticationStorePaths.migrateLegacyConfigPath(legacyPath, targetPath)) {
+                RatBridge.LOGGER.info("Migrated RatBridge authentication users from {} to {}", legacyPath, targetPath);
+            }
+        } catch (Exception error) {
+            RatBridge.LOGGER.warn("Could not migrate RatBridge authentication users from {} to {}; using the world data path", legacyPath, targetPath, error);
+        }
+        return new AuthenticationStore(targetPath);
     }
 
     private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {

@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.bridge.AuthenticationDecision;
 import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
+import datrat.ratbridge.bridge.AuthenticationStorePaths;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
@@ -16,6 +17,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -77,7 +79,7 @@ public final class NeoForgeServerEvents {
                     new NeoForgeMinecraftMessageSink(event.getServer()),
                     new NeoForgeServerStatusProvider(event.getServer(), tpsMonitor),
                     () -> DiscordClientFactory.create(config),
-                    authenticationStore(),
+                    authenticationStore(event.getServer()),
                     logout -> disconnectAuthenticatedPlayer(event.getServer(), logout)
             );
             bridge.onServerStarted();
@@ -211,7 +213,7 @@ public final class NeoForgeServerEvents {
                         new NeoForgeMinecraftMessageSink(server),
                         new NeoForgeServerStatusProvider(server, tpsMonitor),
                         () -> DiscordClientFactory.create(config),
-                        authenticationStore(),
+                        authenticationStore(server),
                         logout -> disconnectAuthenticatedPlayer(server, logout)
                 );
                 if (!serverAvailable.get()) {
@@ -236,8 +238,17 @@ public final class NeoForgeServerEvents {
         return BridgeConfigFile.loadSplit(configDirectory);
     }
 
-    private AuthenticationStore authenticationStore() {
-        return new AuthenticationStore(FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve("authentication-users.toml"));
+    private AuthenticationStore authenticationStore(MinecraftServer server) {
+        Path targetPath = AuthenticationStorePaths.worldDataPath(server.getWorldPath(LevelResource.ROOT));
+        Path legacyPath = FMLPaths.CONFIGDIR.get().resolve("ratbridge").resolve(AuthenticationStorePaths.FILE_NAME);
+        try {
+            if (AuthenticationStorePaths.migrateLegacyConfigPath(legacyPath, targetPath)) {
+                RatBridgeNeoForge.LOGGER.info("Migrated RatBridge authentication users from {} to {}", legacyPath, targetPath);
+            }
+        } catch (Exception error) {
+            RatBridgeNeoForge.LOGGER.warn("Could not migrate RatBridge authentication users from {} to {}; using the world data path", legacyPath, targetPath, error);
+        }
+        return new AuthenticationStore(targetPath);
     }
 
     private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {
