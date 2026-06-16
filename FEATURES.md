@@ -223,7 +223,7 @@ P - Implement role check for authentication: ✅
       include these messages in the right respective places.
     ```
 
-R - Support minecraft text coloring in chat messages, disconnecting screen, or every minecraft place that support it.
+R - Support minecraft text coloring in chat messages, disconnecting screen, or every minecraft place that support it: ✅
     Formally known as Color/Formatting codes:
     ```
     Color codes:

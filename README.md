@@ -230,6 +230,7 @@ botPresenceEnabled = false
 ```
 
 `authentication.toml` controls optional Discord-driven Minecraft authentication:
+Minecraft disconnect/kick messages in this file support legacy color and formatting codes with `&` or `§`.
 
 ```toml
 # Master switch for Discord-driven authentication.
@@ -305,6 +306,7 @@ When authentication is enabled, RatBridge stores accepted links in `<world>/data
 `messages.toml` holds listener toggles and editable message text:
 
 RatBridge defaults to `%placeholder%` syntax. Existing configs that still use `{placeholder}` remain supported for message formats.
+Messages that are shown inside Minecraft support legacy color and formatting codes with `&` or `§`, for example `&aGreen`, `&lBold`, and `&rReset`. Discord-bound messages automatically remove those Minecraft formatting codes so `&c`/`§c` never appears raw in Discord.
 
 ```toml
 # Toggles for each synced listener/event type.
@@ -426,9 +428,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.19.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.19.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.19.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.20.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.20.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.20.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

@@ -49,6 +49,17 @@ final class BridgeControllerTest {
     }
 
     @Test
+    void minecraftToDiscordStripsMinecraftFormattingCodes() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(config(false), message -> { }, () -> client);
+        controller.onMinecraftChat("Steve", "&ahello \u00A7l@everyone");
+
+        assertEquals("[MC] <Steve> hello @\u200Beveryone", client.normalMessage);
+    }
+
+    @Test
     void customMessagesCanUseRatBridgeVersionPlaceholder() throws Exception {
         BridgeController controller = new BridgeController();
         FakeDiscordClient client = new FakeDiscordClient();
@@ -110,6 +121,18 @@ final class BridgeControllerTest {
         client.receive(new DiscordInboundMessage("Alex", "that one", "Steve"));
 
         assertEquals("[Discord] <Alex> replied to <Steve>: that one", sink.message);
+    }
+
+    @Test
+    void discordToMinecraftKeepsConfiguredMinecraftFormattingCodesForPlatformParser() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        CapturingMinecraftSink sink = new CapturingMinecraftSink();
+
+        controller.start(configWithMinecraftColorFormat(), sink, () -> client);
+        client.receive(new DiscordInboundMessage("Alex", "hello", ""));
+
+        assertEquals("&7[Discord] &b<Alex>&r hello", sink.message);
     }
 
     @Test
@@ -420,6 +443,23 @@ final class BridgeControllerTest {
                 true, true, true, true, true, true,
                 750,
                 "[MC %ratbridgeversion%] <%player%> %message%", "[Discord] <%author%> %message%", "[Discord] <%author%> replied to <%replyAuthor%>: %message%", "[MC] %message%",
+                "%player% joined the game", "%player% left the game", "%message%", "%player% has made the advancement [%advancement%]", "Server started", "Server stopping");
+    }
+
+    private static BridgeConfig configWithMinecraftColorFormat() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                false,
+                List.of(),
+                false,
+                List.of(),
+                AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
+                true, true, true,
+                true, true, true, true, true, true,
+                750,
+                "[MC] <%player%> %message%", "&7[Discord] &b<%author%>&r %message%", "&7[Discord] &b<%author%>&r replied to <%replyAuthor%>: %message%", "[MC] %message%",
                 "%player% joined the game", "%player% left the game", "%message%", "%player% has made the advancement [%advancement%]", "Server started", "Server stopping");
     }
 

@@ -1,7 +1,6 @@
 package datrat.ratbridge.platform.neoforge;
 
 import datrat.ratbridge.bridge.MinecraftMessageSink;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 public final class NeoForgeMinecraftMessageSink implements MinecraftMessageSink {
@@ -13,7 +12,7 @@ public final class NeoForgeMinecraftMessageSink implements MinecraftMessageSink 
 
     @Override
     public void sendSystemMessage(String message) {
-        Runnable broadcast = () -> server.getPlayerList().broadcastSystemMessage(Component.literal(message), false);
+        Runnable broadcast = () -> server.getPlayerList().broadcastSystemMessage(LegacyTextComponents.parse(message), false);
         if (server.isSameThread()) {
             broadcast.run();
         } else {

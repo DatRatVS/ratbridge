@@ -130,7 +130,7 @@ public final class NeoForgeServerEvents {
                         player.getGameProfile().getId().toString(),
                         player.getGameProfile().getName()
                 );
-                player.connection.disconnect(Component.literal(decision.disconnectMessage()));
+                player.connection.disconnect(LegacyTextComponents.parse(decision.disconnectMessage()));
                 return;
             }
             bridge.onPlayerJoined(player.getGameProfile().getName());
@@ -265,7 +265,7 @@ public final class NeoForgeServerEvents {
             try {
                 ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(logout.minecraftUuid()));
                 if (player != null) {
-                    player.connection.disconnect(Component.literal(logout.disconnectMessage()));
+                    player.connection.disconnect(LegacyTextComponents.parse(logout.disconnectMessage()));
                 }
             } catch (IllegalArgumentException error) {
                 RatBridgeNeoForge.LOGGER.warn("Cannot disconnect logged out player with invalid UUID {}", logout.minecraftUuid());

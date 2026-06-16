@@ -419,6 +419,7 @@ public final class BridgeConfigFile {
         return """
                 # RatBridge Discord authentication.
                 # When enabled, players must link one Minecraft account to one Discord account before they can play.
+                # Minecraft-facing kick/disconnect messages support legacy color and formatting codes with & or §.
                 # Flow:
                 # 1. Player joins Minecraft.
                 # 2. RatBridge disconnects them with a six digit code.
@@ -516,6 +517,8 @@ public final class BridgeConfigFile {
         return """
                 # RatBridge message settings.
                 # This file controls which events are synced and what text RatBridge sends.
+                # Messages shown in Minecraft support legacy color and formatting codes with & or §.
+                # Discord-bound messages automatically remove those Minecraft formatting codes.
                 
                 # Listener toggles.
                 # Set a value to false to stop syncing that specific message/event type.

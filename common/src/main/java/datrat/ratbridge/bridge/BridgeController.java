@@ -107,10 +107,10 @@ public final class BridgeController {
             return;
         }
         if (current.webhookDelivery()) {
-            currentClient.sendMinecraftChatMessage(player, MentionSanitizer.sanitize(message));
+            currentClient.sendMinecraftChatMessage(player, discordSafe(message));
             return;
         }
-        currentClient.sendMessage(MentionSanitizer.sanitize(formatted));
+        currentClient.sendMessage(discordSafe(formatted));
     }
 
     public void onPlayerJoined(String player) {
@@ -188,7 +188,7 @@ public final class BridgeController {
         }
         if (current.syncServerStop()) {
             String formatted = MessageFormatter.format(current.eventFormat(), CommonPlaceholders.withRatBridgeVersion(Map.of("message", current.serverStopMessage())));
-            currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
+            currentClient.sendMessageBlocking(discordSafe(formatted), Duration.ofSeconds(5));
         }
         updateShutdownTopic(current, currentClient);
         updateShutdownChannelNames(current, currentClient);
@@ -206,7 +206,7 @@ public final class BridgeController {
     private void sendToDiscord(String message) {
         DiscordBridgeClient currentClient = client;
         if (currentClient != null) {
-            currentClient.sendMessage(MentionSanitizer.sanitize(message));
+            currentClient.sendMessage(discordSafe(message));
         }
     }
 
@@ -221,7 +221,7 @@ public final class BridgeController {
             if (response.isPresent()) {
                 AuthenticationMessageResponse authenticationResponse = response.get();
                 if (currentClient != null && BridgeConfig.hasText(authenticationResponse.replyMessage())) {
-                    currentClient.sendDirectMessage(inbound.authorId(), inbound.channelId(), authenticationResponse.replyMessage());
+                    currentClient.sendDirectMessage(inbound.authorId(), inbound.channelId(), discordSafe(authenticationResponse.replyMessage()));
                 }
                 authenticationResponse.logout().ifPresent(authenticationLogoutConsumer);
                 return;
@@ -258,7 +258,7 @@ public final class BridgeController {
 
         currentClient.sendTemporaryMessage(
                 inbound.channelId(),
-                MentionSanitizer.sanitize(onlinePlayersMessage(current)),
+                discordSafe(onlinePlayersMessage(current)),
                 Duration.ofSeconds(Math.max(1, current.discordCommands().onlineDeleteAfterSeconds()))
         );
         return true;
@@ -308,7 +308,7 @@ public final class BridgeController {
             }
             currentClient.updateChannelTopic(
                     current.resolvedTopicUpdaterChannelId(),
-                    buildTopic(current.topicUpdaterMessage())
+                    discordSafe(buildTopic(current.topicUpdaterMessage()))
             );
         } catch (Exception ignored) {
             // Discord client implementations log REST failures; the scheduler must keep running.
@@ -321,7 +321,7 @@ public final class BridgeController {
         }
         currentClient.updateChannelTopicBlocking(
                 current.resolvedTopicUpdaterChannelId(),
-                buildTopic(current.topicUpdaterShutdownMessage()),
+                discordSafe(buildTopic(current.topicUpdaterShutdownMessage())),
                 Duration.ofSeconds(5)
         );
     }
@@ -366,7 +366,7 @@ public final class BridgeController {
             if (!isRunning() || current == null || currentClient == null || !current.channelNameUpdatersEnabled() || !current.channelNameUpdaters().contains(updater)) {
                 return;
             }
-            currentClient.updateChannelName(updater.channelId(), buildStatusMessage(updater.message()));
+            currentClient.updateChannelName(updater.channelId(), discordSafe(buildStatusMessage(updater.message())));
         } catch (Exception ignored) {
             // Discord client implementations log REST failures; the scheduler must keep running.
         }
@@ -382,7 +382,7 @@ public final class BridgeController {
             }
             currentClient.updateChannelNameBlocking(
                     updater.channelId(),
-                    buildStatusMessage(updater.shutdownMessage()),
+                    discordSafe(buildStatusMessage(updater.shutdownMessage())),
                     Duration.ofSeconds(5)
             );
         }
@@ -422,7 +422,7 @@ public final class BridgeController {
             currentClient.updateBotPresence(new BotPresenceConfig(
                     presence.onlineStatus(),
                     presence.activityType(),
-                    buildStatusMessage(presence.activity()),
+                    discordSafe(buildStatusMessage(presence.activity())),
                     presence.streamUrl(),
                     presence.updateIntervalSeconds()
             ));
@@ -442,5 +442,9 @@ public final class BridgeController {
 
     private String buildStatusMessage(String template, long uptimeMillis) {
         return TopicTemplateFormatter.format(template, statusProvider.snapshot(uptimeMillis));
+    }
+
+    private static String discordSafe(String message) {
+        return MentionSanitizer.sanitize(LegacyMinecraftFormat.stripCodes(message));
     }
 }
