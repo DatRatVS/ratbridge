@@ -1,5 +1,7 @@
 package datrat.ratbridge.bridge;
 
+import datrat.ratbridge.RatBridgeInfo;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +37,7 @@ public final class TopicTemplateFormatter {
         placeholders.put("%uptimehours%", Long.toString(status.uptimeMillis() / 3_600_000L));
         placeholders.put("%motd%", status.motd());
         placeholders.put("%serverversion%", status.serverVersion());
+        placeholders.put("%ratbridgeversion%", RatBridgeInfo.VERSION);
         placeholders.put("%tps%", String.format(Locale.ROOT, "%.2f", status.tps()));
         placeholders.put("%date%", DATE.format(LocalDate.from(localNow)));
         placeholders.put("%time%", TIME.format(LocalTime.from(localNow)));

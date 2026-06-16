@@ -37,13 +37,13 @@ public final class AuthenticationService {
         }
 
         String code = codeFor(minecraftUuid, minecraftName, authentication);
-        String message = MessageFormatter.format(authentication.kickMessage(), Map.of(
+        String message = MessageFormatter.format(authentication.kickMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", minecraftName,
                 "uuid", minecraftUuid,
                 "code", code,
                 "logoutCommand", authentication.logoutCommand(),
                 "logoutcommand", authentication.logoutCommand()
-        ));
+        )));
         return AuthenticationDecision.deny(message);
     }
 
@@ -67,12 +67,23 @@ public final class AuthenticationService {
         try {
             Optional<AuthenticationStore.AuthenticatedAccount> removed = store.unlinkByDiscordUserId(message.authorId());
             if (removed.isEmpty()) {
-                return AuthenticationMessageResponse.reply(authentication.logoutNotLinkedMessage());
+                return AuthenticationMessageResponse.reply(MessageFormatter.format(
+                        authentication.logoutNotLinkedMessage(),
+                        CommonPlaceholders.withRatBridgeVersion(Map.of("discord", message.author()))
+                ));
             }
             AuthenticationStore.AuthenticatedAccount account = removed.get();
-            return AuthenticationMessageResponse.logout(
+            String logoutMessage = MessageFormatter.format(
                     authentication.logoutSuccessMessage(),
-                    new AuthenticationLogout(account.minecraftUuid(), account.minecraftName(), authentication.logoutSuccessMessage())
+                    CommonPlaceholders.withRatBridgeVersion(Map.of(
+                            "player", account.minecraftName(),
+                            "uuid", account.minecraftUuid(),
+                            "discord", message.author()
+                    ))
+            );
+            return AuthenticationMessageResponse.logout(
+                    logoutMessage,
+                    new AuthenticationLogout(account.minecraftUuid(), account.minecraftName(), logoutMessage)
             );
         } catch (IOException error) {
             return AuthenticationMessageResponse.reply("RatBridge could not update the authentication database. Check the server log.");
@@ -82,17 +93,20 @@ public final class AuthenticationService {
     private String handleCode(AuthenticationConfig authentication, DiscordInboundMessage message, String code) {
         PendingAuthentication pending = pendingByCode.remove(code);
         if (pending == null || pending.expired()) {
-            return authentication.invalidCodeMessage();
+            return MessageFormatter.format(
+                    authentication.invalidCodeMessage(),
+                    CommonPlaceholders.withRatBridgeVersion(Map.of("discord", message.author(), "code", code))
+            );
         }
         pendingCodeByMinecraftUuid.remove(pending.minecraftUuid());
 
         if (store.isMinecraftLinkedToOtherDiscord(pending.minecraftUuid(), message.authorId())
                 || store.isDiscordLinkedToOtherMinecraft(message.authorId(), pending.minecraftUuid())) {
-            return MessageFormatter.format(authentication.alreadyLinkedMessage(), Map.of(
+            return MessageFormatter.format(authentication.alreadyLinkedMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                     "player", pending.minecraftName(),
                     "discord", message.author(),
                     "code", code
-            ));
+            )));
         }
 
         try {
@@ -101,11 +115,11 @@ public final class AuthenticationService {
             return "RatBridge could not update the authentication database. Check the server log.";
         }
 
-        return MessageFormatter.format(authentication.successMessage(), Map.of(
+        return MessageFormatter.format(authentication.successMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", pending.minecraftName(),
                 "discord", message.author(),
                 "code", code
-        ));
+        )));
     }
 
     private String codeFor(String minecraftUuid, String minecraftName, AuthenticationConfig config) {

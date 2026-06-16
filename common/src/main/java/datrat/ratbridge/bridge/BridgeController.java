@@ -98,10 +98,10 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncChat() || !current.syncMinecraftToDiscordChat()) {
             return;
         }
-        String formatted = MessageFormatter.format(current.minecraftToDiscordFormat(), Map.of(
+        String formatted = MessageFormatter.format(current.minecraftToDiscordFormat(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", player,
                 "message", message
-        ));
+        )));
         DiscordBridgeClient currentClient = client;
         if (currentClient == null) {
             return;
@@ -118,7 +118,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerJoin()) {
             return;
         }
-        sendEvent(MessageFormatter.format(current.playerJoinMessage(), Map.of("player", player)));
+        sendEvent(MessageFormatter.format(current.playerJoinMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of("player", player))));
     }
 
     public AuthenticationDecision authenticateLogin(String playerUuid, String player) {
@@ -135,10 +135,10 @@ public final class BridgeController {
                 || !current.authentication().unauthenticatedLoginMessageEnabled()) {
             return;
         }
-        sendEvent(MessageFormatter.format(current.authentication().unauthenticatedLoginMessage(), Map.of(
+        sendEvent(MessageFormatter.format(current.authentication().unauthenticatedLoginMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", player,
                 "uuid", playerUuid
-        )));
+        ))));
     }
 
     public void onPlayerLeft(String player) {
@@ -146,7 +146,7 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerLeave()) {
             return;
         }
-        sendEvent(MessageFormatter.format(current.playerLeaveMessage(), Map.of("player", player)));
+        sendEvent(MessageFormatter.format(current.playerLeaveMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of("player", player))));
     }
 
     public void onPlayerDied(String player, String deathMessage) {
@@ -154,10 +154,10 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerDeath()) {
             return;
         }
-        sendEvent(MessageFormatter.format(current.playerDeathMessage(), Map.of(
+        sendEvent(MessageFormatter.format(current.playerDeathMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", player,
                 "message", deathMessage
-        )));
+        ))));
     }
 
     public void onPlayerAdvancement(String player, String advancement, String description) {
@@ -165,11 +165,11 @@ public final class BridgeController {
         if (!isRunning() || current == null || !current.syncPlayerAdvancement()) {
             return;
         }
-        sendEvent(MessageFormatter.format(current.playerAdvancementMessage(), Map.of(
+        sendEvent(MessageFormatter.format(current.playerAdvancementMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "player", player,
                 "advancement", advancement,
                 "description", description
-        )));
+        ))));
     }
 
     public void onServerStarted() {
@@ -187,7 +187,7 @@ public final class BridgeController {
             return;
         }
         if (current.syncServerStop()) {
-            String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", current.serverStopMessage()));
+            String formatted = MessageFormatter.format(current.eventFormat(), CommonPlaceholders.withRatBridgeVersion(Map.of("message", current.serverStopMessage())));
             currentClient.sendMessageBlocking(MentionSanitizer.sanitize(formatted), Duration.ofSeconds(5));
         }
         updateShutdownTopic(current, currentClient);
@@ -199,7 +199,7 @@ public final class BridgeController {
         if (current == null) {
             return;
         }
-        String formatted = MessageFormatter.format(current.eventFormat(), Map.of("message", eventMessage));
+        String formatted = MessageFormatter.format(current.eventFormat(), CommonPlaceholders.withRatBridgeVersion(Map.of("message", eventMessage)));
         sendToDiscord(formatted);
     }
 
@@ -236,12 +236,12 @@ public final class BridgeController {
             return;
         }
         String template = inbound.hasReplyAuthor() ? current.discordReplyToMinecraftFormat() : current.discordToMinecraftFormat();
-        String formatted = MessageFormatter.format(template, Map.of(
+        String formatted = MessageFormatter.format(template, CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "author", inbound.author(),
                 "replyAuthor", inbound.replyAuthor(),
                 "replyauthor", inbound.replyAuthor(),
                 "message", inbound.content()
-        ));
+        )));
         sink.sendSystemMessage(formatted);
     }
 
@@ -270,12 +270,12 @@ public final class BridgeController {
         String template = playerCount == 0
                 ? current.discordCommands().onlineNoPlayersMessage()
                 : current.discordCommands().onlinePlayersMessage();
-        return MessageFormatter.format(template, Map.of(
+        return MessageFormatter.format(template, CommonPlaceholders.withRatBridgeVersion(Map.of(
                 "playercount", Integer.toString(playerCount),
                 "playerPlural", playerCount == 1 ? "" : "s",
                 "playerplural", playerCount == 1 ? "" : "s",
                 "players", String.join(", ", players)
-        ));
+        )));
     }
 
     private synchronized void startTopicUpdater() {

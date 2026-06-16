@@ -1,5 +1,6 @@
 package datrat.ratbridge.bridge;
 
+import datrat.ratbridge.RatBridgeInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,6 +46,17 @@ final class BridgeControllerTest {
         controller.onMinecraftChat("Steve", "hello");
 
         assertEquals("[MC] <Steve> hello", client.normalMessage);
+    }
+
+    @Test
+    void customMessagesCanUseRatBridgeVersionPlaceholder() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(configWithVersionFormat(), message -> { }, () -> client);
+        controller.onMinecraftChat("Steve", "hello");
+
+        assertEquals("[MC " + RatBridgeInfo.VERSION + "] <Steve> hello", client.normalMessage);
     }
 
     @Test
@@ -299,6 +311,23 @@ final class BridgeControllerTest {
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static BridgeConfig configWithVersionFormat() {
+        return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                false,
+                List.of(),
+                false,
+                List.of(),
+                AuthenticationConfig.disabled(),
+                DiscordCommandConfig.defaults(),
+                true, true, true,
+                true, true, true, true, true, true,
+                750,
+                "[MC %ratbridgeversion%] <%player%> %message%", "[Discord] <%author%> %message%", "[Discord] <%author%> replied to <%replyAuthor%>: %message%", "[MC] %message%",
+                "%player% joined the game", "%player% left the game", "%message%", "%player% has made the advancement [%advancement%]", "Server started", "Server stopping");
     }
 
     private static BridgeConfig channelNameConfig() {

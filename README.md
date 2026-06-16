@@ -155,7 +155,7 @@ topicUpdaterEnabled = false
 topicUpdaterChannelId = ""
 
 # Online topic text. Available placeholders include:
-# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %ratbridgeversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
 # Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
 topicUpdaterMessage = "Players: %playercount%/%playermax% | TPS: %tps% | Uptime: %uptimemins%m"
 
@@ -175,7 +175,7 @@ channelNameUpdatersEnabled = false
 
 # Add one [[ChannelUpdater]] block for each Discord channel name RatBridge should update.
 # Available placeholders include:
-# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %ratbridgeversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
 # Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
 # Minimum update interval is 5 minutes; 6+ is recommended because Discord rate-limits channel renames.
 # ChannelId: Discord channel ID to rename.
@@ -210,7 +210,7 @@ botPresenceEnabled = false
 # ActivityType: PLAYING, LISTENING, WATCHING, STREAMING, COMPETING, or CUSTOM.
 # Activity: text shown in the bot activity. Supports the same placeholders as topic/channel updaters.
 # Available placeholders include:
-# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
+# %playercount%, %playermax%, %totalplayers%, %uptimemins%, %uptimehours%, %motd%, %serverversion%, %ratbridgeversion%, %tps%, %date%, %time%, %datetime%, %timestamp%
 # Memory placeholders: %freememory%, %usedmemory%, %totalmemory%, %maxmemory%, %freememorygb%, %usedmemorygb%, %totalmemorygb%, %maxmemorygb%
 # StreamUrl: required only when ActivityType = STREAMING.
 # UpdateInterval: seconds before RatBridge moves to the next block. Minimum: 30.
@@ -242,21 +242,26 @@ authenticationCodeTtlMinutes = 10
 authenticationUnauthenticatedLoginMessageEnabled = true
 
 # Discord event text for unauthenticated join attempts.
-# Placeholders: %player%, %uuid%
+# Placeholders: %player%, %uuid%, %ratbridgeversion%
 authenticationUnauthenticatedLoginMessage = "%player% tried to join but is not authenticated yet."
 
 # Minecraft disconnect screen text. Use \n for line breaks.
-# Placeholders: %player%, %uuid%, %code%, %logoutcommand%
+# Placeholders: %player%, %uuid%, %ratbridgeversion%, %code%, %logoutcommand%
 authenticationKickMessage = "This server requires Discord authentication.\nSend code %code% to the RatBridge bot DM to authenticate %player%."
 
 # Discord DM responses.
+# Success placeholders: %player%, %discord%, %code%, %ratbridgeversion%
 authenticationSuccessMessage = "Authenticated %player%. You can now join the server."
+# Invalid-code placeholders: %discord%, %code%, %ratbridgeversion%
 authenticationInvalidCodeMessage = "Invalid or expired authentication code."
+# Already-linked placeholders: %player%, %discord%, %code%, %ratbridgeversion%
 authenticationAlreadyLinkedMessage = "That Minecraft or Discord account is already linked to another account."
 
 # Discord DM command that removes the current link.
 authenticationLogoutCommand = "r!logout"
+# Logout success placeholders: %player%, %uuid%, %discord%, %ratbridgeversion%
 authenticationLogoutSuccessMessage = "Your Minecraft account link was removed. Join the server again to get a new code."
+# Logout not-linked placeholders: %discord%, %ratbridgeversion%
 authenticationLogoutNotLinkedMessage = "Your Discord account is not linked to any Minecraft account."
 ```
 
@@ -288,29 +293,29 @@ onlineCommandDeleteAfterSeconds = 10
 onlinePlayersMessage = "**%playercount% online player%playerplural%:** %players%"
 onlineNoPlayersMessage = "**No online players.**"
 
-# Minecraft -> Discord chat. Placeholders: %player%, %message%
+# Minecraft -> Discord chat. Placeholders: %player%, %message%, %ratbridgeversion%
 minecraftToDiscordFormat = "[MC] <%player%> %message%"
 
-# Discord -> Minecraft chat. Placeholders: %author%, %message%
+# Discord -> Minecraft chat. Placeholders: %author%, %message%, %ratbridgeversion%
 discordToMinecraftFormat = "[Discord] <%author%> %message%"
 
-# Discord reply -> Minecraft chat. Placeholders: %author%, %replyauthor%, %message%
+# Discord reply -> Minecraft chat. Placeholders: %author%, %replyauthor%, %message%, %ratbridgeversion%
 discordReplyToMinecraftFormat = "[Discord] <%author%> replied to <%replyauthor%>: %message%"
 
-# Wrapper for event messages. Placeholder: %message%
+# Wrapper for event messages. Placeholder: %message%, %ratbridgeversion%
 eventFormat = "[MC] %message%"
 
-# Join/leave event text. Placeholder: %player%
+# Join/leave event text. Placeholders: %player%, %ratbridgeversion%
 playerJoinMessage = "%player% joined the game"
 playerLeaveMessage = "%player% left the game"
 
-# Death event text. Placeholders: %player%, %message%
+# Death event text. Placeholders: %player%, %message%, %ratbridgeversion%
 playerDeathMessage = "%message%"
 
-# Advancement event text. Placeholders: %player%, %advancement%, %description%
+# Advancement event text. Placeholders: %player%, %advancement%, %description%, %ratbridgeversion%
 playerAdvancementMessage = "%player% has made the advancement [%advancement%]"
 
-# Server lifecycle event text.
+# Server lifecycle event text. Use eventFormat for placeholders such as %ratbridgeversion%.
 serverStartMessage = "Server started"
 serverStopMessage = "Server stopping"
 ```
