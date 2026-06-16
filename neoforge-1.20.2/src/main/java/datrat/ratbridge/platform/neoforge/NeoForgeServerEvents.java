@@ -255,7 +255,7 @@ public final class NeoForgeServerEvents {
         return new AuthenticationLoginContext(
                 profile.getId().toString(),
                 profile.getName(),
-                player.server.getPlayerList().isWhiteListed(profile),
+                player.server.getPlayerList().getWhiteList().isWhiteListed(profile),
                 player.server.getPlayerList().getBans().isBanned(profile)
         );
     }
