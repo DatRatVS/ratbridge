@@ -181,6 +181,38 @@ public record BridgeConfig(
             if (authentication.codeTtlMinutes() < 1) {
                 errors.add("authenticationCodeTtlMinutes must be at least 1");
             }
+            if (authentication.requiresDiscordAccessCheck() && !"bot".equals(resolvedMode)) {
+                errors.add("Discord server and subscriber role authentication checks require mode = 'bot'");
+            }
+            if (authentication.requiresDiscordServerCheck()
+                    && !authentication.requiresAnyDiscordServer()
+                    && authentication.requiredDiscordServerIds(serverId).isEmpty()) {
+                errors.add("authenticationRequiredDiscordServers = true requires serverId");
+            }
+            if (authentication.requireSubscriberRole()) {
+                if (authentication.subscriberRoles().stream().noneMatch(BridgeConfig::hasText)) {
+                    errors.add("authenticationSubscriberRoles is required when authenticationRequireSubscriberRole is true");
+                }
+                if (!hasText(serverId)
+                        && !authentication.requiresAnyDiscordServer()
+                        && authentication.requiredDiscordServerIds(serverId).isEmpty()) {
+                    errors.add("authenticationRequireSubscriberRole requires serverId or authenticationRequiredDiscordServers");
+                }
+                if (!hasText(authentication.subscriberRoleKickMessage())) {
+                    errors.add("authenticationSubscriberRoleKickMessage is required when authenticationRequireSubscriberRole is true");
+                }
+                if (!hasText(authentication.missingSubscriberRoleMessage())) {
+                    errors.add("authenticationMissingSubscriberRoleMessage is required when authenticationRequireSubscriberRole is true");
+                }
+            }
+            if (authentication.requiresDiscordAccessCheck()) {
+                if (!hasText(authentication.notInServerMessage())) {
+                    errors.add("authenticationNotInServerMessage is required when Discord server authentication checks are enabled");
+                }
+                if (!hasText(authentication.roleCheckFailedMessage())) {
+                    errors.add("authenticationRoleCheckFailedMessage is required when Discord server authentication checks are enabled");
+                }
+            }
             if (!hasText(authentication.kickMessage())) {
                 errors.add("authenticationKickMessage is required when authentication is enabled");
             }

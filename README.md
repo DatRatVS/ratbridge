@@ -238,6 +238,41 @@ authenticationEnabled = false
 # Minutes before an unused join code expires.
 authenticationCodeTtlMinutes = 10
 
+# Minecraft names that bypass linking and Discord access checks.
+authenticationBypassNames = []
+
+# Players on the vanilla whitelist bypass linking and Discord access checks.
+authenticationWhitelistedPlayersBypass = true
+
+# If false, players on the vanilla banlist bypass RatBridge authentication.
+authenticationCheckBannedPlayers = false
+
+# If true, only vanilla-banned players are checked by RatBridge.
+authenticationOnlyCheckBannedPlayers = false
+
+# Optional Discord server membership requirement for linked accounts.
+# Accepted values: false, true, "server id", or ["server id", "server id"].
+# true means membership in at least one Discord server where the bot is present.
+# A list means membership in every listed server.
+authenticationRequiredDiscordServers = "false"
+
+# Text used by %invite% in the denial messages below.
+authenticationDiscordInvite = ""
+
+# Optional role gate for linked Discord accounts. Bot mode only.
+# If enabled, the bot checks the configured role IDs in the required servers,
+# or serverId from config.toml when no server list is configured.
+authenticationRequireSubscriberRole = false
+authenticationSubscriberRoles = []
+authenticationRequireAllSubscriberRoles = false
+
+# Access denial messages.
+# Placeholders: %player%, %uuid%, %discord%, %invite%, %ratbridgeversion%
+authenticationSubscriberRoleKickMessage = "You must have the required Discord role to join this server."
+authenticationNotInServerMessage = "You are not currently in the required Discord server."
+authenticationMissingSubscriberRoleMessage = "RatBridge could not find any configured subscriber role. Contact a server admin."
+authenticationRoleCheckFailedMessage = "RatBridge could not verify your Discord access. Contact a server admin."
+
 # Sends a Discord event when an unauthenticated player attempts to join.
 authenticationUnauthenticatedLoginMessageEnabled = true
 
@@ -391,9 +426,9 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew --no-daemon --max-workers=1 --c
 The built JAR will be located at:
 
 ```text
-forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.18.jar
-fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.18.jar
-neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.18.jar
+forge-1.20.1/build/libs/ratbridge-forge-1.20.1-0.1.19.jar
+fabric-1.20.1/build/libs/ratbridge-fabric-1.20.1-0.1.19.jar
+neoforge-1.20.2/build/libs/ratbridge-neoforge-1.20.2-0.1.19.jar
 ```
 
 Do not use the `-thin.jar` artifact on a server. It does not include the Discord runtime.

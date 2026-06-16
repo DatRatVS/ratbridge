@@ -431,6 +431,49 @@ public final class BridgeConfigFile {
                 + "# Minutes before an unused join code expires. A new code is generated on the next join attempt.\n"
                 + "authenticationCodeTtlMinutes = " + integer(values, "authenticationCodeTtlMinutes", 10) + "\n"
                 + "\n"
+                + "# Minecraft names that bypass linking and Discord access checks.\n"
+                + "authenticationBypassNames = " + stringListToml(stringList(values, "authenticationBypassNames", List.of())) + "\n"
+                + "\n"
+                + "# If true, players on the vanilla Minecraft whitelist bypass linking and Discord access checks.\n"
+                + "authenticationWhitelistedPlayersBypass = " + boolString(values, "authenticationWhitelistedPlayersBypass", true) + "\n"
+                + "\n"
+                + "# If true, players on the vanilla Minecraft banlist are still checked by RatBridge.\n"
+                + "authenticationCheckBannedPlayers = " + boolString(values, "authenticationCheckBannedPlayers", false) + "\n"
+                + "\n"
+                + "# If true, only players on the vanilla Minecraft banlist are checked by RatBridge; everyone else bypasses.\n"
+                + "authenticationOnlyCheckBannedPlayers = " + boolString(values, "authenticationOnlyCheckBannedPlayers", false) + "\n"
+                + "\n"
+                + "# Optional Discord server membership requirement for linked accounts.\n"
+                + "# Accepted values: false, true, a server ID string, or a list of server ID strings.\n"
+                + "# true requires membership in at least one Discord server where the bot is present.\n"
+                + "# A list requires membership in every listed server.\n"
+                + "authenticationRequiredDiscordServers = " + quote(string(values, "authenticationRequiredDiscordServers", "false")) + "\n"
+                + "\n"
+                + "# Invite text used by %invite% in denial messages.\n"
+                + "authenticationDiscordInvite = " + quote(string(values, "authenticationDiscordInvite", "")) + "\n"
+                + "\n"
+                + "# Require at least one or all listed Discord role IDs for linked accounts.\n"
+                + "# Bot mode only; the bot needs access to the server and member information.\n"
+                + "authenticationRequireSubscriberRole = " + boolString(values, "authenticationRequireSubscriberRole", false) + "\n"
+                + "authenticationSubscriberRoles = " + stringListToml(stringList(values, "authenticationSubscriberRoles", List.of())) + "\n"
+                + "authenticationRequireAllSubscriberRoles = " + boolString(values, "authenticationRequireAllSubscriberRoles", false) + "\n"
+                + "\n"
+                + "# Kick message when the linked Discord account is missing the required role.\n"
+                + "# Placeholders: %player%, %uuid%, %discord%, %invite%, %ratbridgeversion%\n"
+                + "authenticationSubscriberRoleKickMessage = " + quote(string(values, "authenticationSubscriberRoleKickMessage", "You must have the required Discord role to join this server.")) + "\n"
+                + "\n"
+                + "# Kick message when the linked Discord account is not in the required Discord server.\n"
+                + "# Placeholders: %player%, %uuid%, %discord%, %invite%, %ratbridgeversion%\n"
+                + "authenticationNotInServerMessage = " + quote(string(values, "authenticationNotInServerMessage", "You are not currently in the required Discord server.")) + "\n"
+                + "\n"
+                + "# Kick message when none of the configured role IDs can be found on Discord.\n"
+                + "# Placeholders: %player%, %uuid%, %discord%, %invite%, %ratbridgeversion%\n"
+                + "authenticationMissingSubscriberRoleMessage = " + quote(string(values, "authenticationMissingSubscriberRoleMessage", "RatBridge could not find any configured subscriber role. Contact a server admin.")) + "\n"
+                + "\n"
+                + "# Kick message when Discord access verification fails for an unknown reason.\n"
+                + "# Placeholders: %player%, %uuid%, %discord%, %invite%, %ratbridgeversion%\n"
+                + "authenticationRoleCheckFailedMessage = " + quote(string(values, "authenticationRoleCheckFailedMessage", "RatBridge could not verify your Discord access. Contact a server admin.")) + "\n"
+                + "\n"
                 + "# Sends a Discord event when an unauthenticated player attempts to join.\n"
                 + "# This replaces the misleading leave message caused by the server disconnecting the player during login.\n"
                 + "authenticationUnauthenticatedLoginMessageEnabled = " + boolString(values, "authenticationUnauthenticatedLoginMessageEnabled", true) + "\n"
@@ -605,6 +648,21 @@ public final class BridgeConfigFile {
         return "\"" + value.replace("\\", "\\\\").replace("\n", "\\n").replace("\"", "\\\"") + "\"";
     }
 
+    private static List<String> stringList(Map<String, String> values, String key, List<String> fallback) {
+        String value = values.get(key);
+        if (value == null) {
+            return fallback;
+        }
+        return AuthenticationConfig.parseStringList(value);
+    }
+
+    private static String stringListToml(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "[]";
+        }
+        return values.stream().map(BridgeConfigFile::quote).collect(java.util.stream.Collectors.joining(", ", "[", "]"));
+    }
+
     private static List<ChannelNameUpdaterConfig> channelNameUpdaters(Map<String, String> values) {
         int count = Math.max(0, integer(values, "channelNameUpdaterCount", 0));
         List<ChannelNameUpdaterConfig> updaters = new ArrayList<>();
@@ -641,6 +699,19 @@ public final class BridgeConfigFile {
         return new AuthenticationConfig(
                 bool(values, "authenticationEnabled", fallback.enabled()),
                 integer(values, "authenticationCodeTtlMinutes", fallback.codeTtlMinutes()),
+                stringList(values, "authenticationBypassNames", fallback.bypassNames()),
+                bool(values, "authenticationWhitelistedPlayersBypass", fallback.whitelistedPlayersBypass()),
+                bool(values, "authenticationCheckBannedPlayers", fallback.checkBannedPlayers()),
+                bool(values, "authenticationOnlyCheckBannedPlayers", fallback.onlyCheckBannedPlayers()),
+                string(values, "authenticationRequiredDiscordServers", fallback.requiredDiscordServers()),
+                bool(values, "authenticationRequireSubscriberRole", fallback.requireSubscriberRole()),
+                stringList(values, "authenticationSubscriberRoles", fallback.subscriberRoles()),
+                bool(values, "authenticationRequireAllSubscriberRoles", fallback.requireAllSubscriberRoles()),
+                string(values, "authenticationSubscriberRoleKickMessage", fallback.subscriberRoleKickMessage()),
+                string(values, "authenticationNotInServerMessage", fallback.notInServerMessage()),
+                string(values, "authenticationMissingSubscriberRoleMessage", fallback.missingSubscriberRoleMessage()),
+                string(values, "authenticationRoleCheckFailedMessage", fallback.roleCheckFailedMessage()),
+                string(values, "authenticationDiscordInvite", fallback.discordInvite()),
                 bool(values, "authenticationUnauthenticatedLoginMessageEnabled", fallback.unauthenticatedLoginMessageEnabled()),
                 string(values, "authenticationUnauthenticatedLoginMessage", fallback.unauthenticatedLoginMessage()),
                 string(values, "authenticationKickMessage", fallback.kickMessage()),

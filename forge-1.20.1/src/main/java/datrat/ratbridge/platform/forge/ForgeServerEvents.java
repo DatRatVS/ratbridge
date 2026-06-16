@@ -1,11 +1,13 @@
 package datrat.ratbridge.platform.forge;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.RatBridge;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BridgeConfigFile;
 import datrat.ratbridge.bridge.BridgeController;
 import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationLoginContext;
 import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.AuthenticationStorePaths;
@@ -121,10 +123,7 @@ public final class ForgeServerEvents {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            AuthenticationDecision decision = bridge.authenticateLogin(
-                    player.getGameProfile().getId().toString(),
-                    player.getGameProfile().getName()
-            );
+            AuthenticationDecision decision = bridge.authenticateLogin(authenticationLoginContext(player));
             if (!decision.allowed()) {
                 authenticationRejectedPlayers.add(player.getGameProfile().getId());
                 bridge.onUnauthenticatedLogin(
@@ -254,6 +253,16 @@ public final class ForgeServerEvents {
             RatBridge.LOGGER.warn("Could not migrate RatBridge authentication users from {} to {}; using the world data path", legacyPath, targetPath, error);
         }
         return new AuthenticationStore(targetPath);
+    }
+
+    private AuthenticationLoginContext authenticationLoginContext(ServerPlayer player) {
+        GameProfile profile = player.getGameProfile();
+        return new AuthenticationLoginContext(
+                profile.getId().toString(),
+                profile.getName(),
+                player.server.getPlayerList().isWhiteListed(profile),
+                player.server.getPlayerList().getBans().isBanned(profile)
+        );
     }
 
     private void disconnectAuthenticatedPlayer(MinecraftServer server, AuthenticationLogout logout) {

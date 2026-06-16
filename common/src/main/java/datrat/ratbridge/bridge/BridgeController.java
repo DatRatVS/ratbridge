@@ -121,12 +121,12 @@ public final class BridgeController {
         sendEvent(MessageFormatter.format(current.playerJoinMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of("player", player))));
     }
 
-    public AuthenticationDecision authenticateLogin(String playerUuid, String player) {
+    public AuthenticationDecision authenticateLogin(AuthenticationLoginContext login) {
         BridgeConfig current = config;
         if (!isRunning() || current == null) {
             return AuthenticationDecision.allow();
         }
-        return authenticationService.checkLogin(current, playerUuid, player);
+        return authenticationService.checkLogin(current, login, client);
     }
 
     public void onUnauthenticatedLogin(String playerUuid, String player) {

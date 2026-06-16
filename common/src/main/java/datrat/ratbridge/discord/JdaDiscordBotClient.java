@@ -2,14 +2,22 @@ package datrat.ratbridge.discord;
 
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.BotPresenceConfig;
+import datrat.ratbridge.bridge.AuthenticationAccessResult;
+import datrat.ratbridge.bridge.AuthenticationConfig;
+import datrat.ratbridge.bridge.AuthenticationStore;
+import datrat.ratbridge.bridge.CommonPlaceholders;
 import datrat.ratbridge.bridge.DiscordBridgeClient;
 import datrat.ratbridge.bridge.DiscordInboundMessage;
+import datrat.ratbridge.bridge.MessageFormatter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReference;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.WebhookClient;
 import net.dv8tion.jda.api.entities.WebhookType;
@@ -28,6 +36,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -225,6 +234,14 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
     }
 
     @Override
+    public CompletableFuture<AuthenticationAccessResult> verifyAuthenticationAccess(
+            BridgeConfig config,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        return CompletableFuture.supplyAsync(() -> verifyAuthenticationAccessBlocking(config, account));
+    }
+
+    @Override
     public void close() {
         if (jda != null) {
             jda.shutdown();
@@ -232,6 +249,141 @@ public final class JdaDiscordBotClient implements DiscordBridgeClient {
             targetChannel = null;
             webhookClient = null;
         }
+    }
+
+    private AuthenticationAccessResult verifyAuthenticationAccessBlocking(
+            BridgeConfig config,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        AuthenticationConfig authentication = config.authentication();
+        if (jda == null || !authentication.requiresDiscordAccessCheck()) {
+            return AuthenticationAccessResult.allow();
+        }
+
+        if (authentication.requireSubscriberRole()) {
+            List<String> serverIds = subscriberRoleServerIds(authentication, config);
+            if (serverIds.isEmpty()) {
+                return deny(authentication.roleCheckFailedMessage(), authentication, account);
+            }
+            return verifySubscriberRoles(authentication, account, serverIds);
+        }
+        if (authentication.requiresAnyDiscordServer()) {
+            return verifyAnySharedServer(authentication, account);
+        }
+        return verifyRequiredServers(authentication, account, authentication.requiredDiscordServerIds(config.serverId()));
+    }
+
+    private List<String> subscriberRoleServerIds(AuthenticationConfig authentication, BridgeConfig config) {
+        if (authentication.requiresAnyDiscordServer()) {
+            return jda.getGuilds().stream().map(Guild::getId).toList();
+        }
+        List<String> serverIds = authentication.requiredDiscordServerIds(config.serverId());
+        if (serverIds.isEmpty() && BridgeConfig.hasText(config.serverId())) {
+            return List.of(config.serverId().trim());
+        }
+        return serverIds;
+    }
+
+    private AuthenticationAccessResult verifyAnySharedServer(
+            AuthenticationConfig authentication,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        for (Guild guild : jda.getGuilds()) {
+            if (retrieveMember(guild, account.discordUserId()) != null) {
+                return AuthenticationAccessResult.allow();
+            }
+        }
+        return deny(authentication.notInServerMessage(), authentication, account);
+    }
+
+    private AuthenticationAccessResult verifyRequiredServers(
+            AuthenticationConfig authentication,
+            AuthenticationStore.AuthenticatedAccount account,
+            List<String> serverIds
+    ) {
+        for (String serverId : serverIds) {
+            Guild guild = jda.getGuildById(serverId);
+            if (guild == null || retrieveMember(guild, account.discordUserId()) == null) {
+                return deny(authentication.notInServerMessage(), authentication, account);
+            }
+        }
+        return AuthenticationAccessResult.allow();
+    }
+
+    private AuthenticationAccessResult verifySubscriberRoles(
+            AuthenticationConfig authentication,
+            AuthenticationStore.AuthenticatedAccount account,
+            List<String> serverIds
+    ) {
+        List<String> roleIds = authentication.subscriberRoles().stream()
+                .map(String::trim)
+                .filter(BridgeConfig::hasText)
+                .toList();
+        if (roleIds.isEmpty()) {
+            return deny(authentication.missingSubscriberRoleMessage(), authentication, account);
+        }
+
+        boolean foundAnyConfiguredRole = false;
+        boolean foundMemberInRoleGuild = false;
+        boolean missingFromRoleGuild = false;
+        for (String serverId : serverIds) {
+            Guild guild = jda.getGuildById(serverId);
+            if (guild == null) {
+                continue;
+            }
+            List<String> guildRoleIds = roleIds.stream()
+                    .filter(roleId -> guild.getRoleById(roleId) != null)
+                    .toList();
+            foundAnyConfiguredRole = foundAnyConfiguredRole || !guildRoleIds.isEmpty();
+            if (guildRoleIds.isEmpty()) {
+                continue;
+            }
+
+            Member member = retrieveMember(guild, account.discordUserId());
+            if (member == null) {
+                missingFromRoleGuild = true;
+                continue;
+            }
+            foundMemberInRoleGuild = true;
+
+            List<String> memberRoleIds = member.getRoles().stream().map(Role::getId).toList();
+            boolean hasRequiredRoles = authentication.requireAllSubscriberRoles()
+                    ? memberRoleIds.containsAll(guildRoleIds)
+                    : guildRoleIds.stream().anyMatch(memberRoleIds::contains);
+            if (hasRequiredRoles) {
+                return AuthenticationAccessResult.allow();
+            }
+        }
+
+        if (!foundAnyConfiguredRole) {
+            return deny(authentication.missingSubscriberRoleMessage(), authentication, account);
+        }
+        if (missingFromRoleGuild && !foundMemberInRoleGuild) {
+            return deny(authentication.notInServerMessage(), authentication, account);
+        }
+        return deny(authentication.subscriberRoleKickMessage(), authentication, account);
+    }
+
+    private Member retrieveMember(Guild guild, String discordUserId) {
+        try {
+            return guild.retrieveMemberById(discordUserId).complete();
+        } catch (Exception error) {
+            LOGGER.debug("Unable to retrieve Discord member {} from guild {}", discordUserId, guild.getId(), error);
+            return null;
+        }
+    }
+
+    private AuthenticationAccessResult deny(
+            String template,
+            AuthenticationConfig authentication,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        return AuthenticationAccessResult.deny(MessageFormatter.format(template, CommonPlaceholders.withRatBridgeVersion(Map.of(
+                "player", account.minecraftName(),
+                "uuid", account.minecraftUuid(),
+                "discord", account.discordName(),
+                "invite", authentication.discordInvite()
+        ))));
     }
 
     private WebhookClient<Message> resolveWebhookClient(BridgeConfig config) {

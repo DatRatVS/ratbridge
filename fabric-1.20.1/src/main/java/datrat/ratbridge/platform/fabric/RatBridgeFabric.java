@@ -1,7 +1,9 @@
 package datrat.ratbridge.platform.fabric;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import datrat.ratbridge.bridge.AuthenticationDecision;
+import datrat.ratbridge.bridge.AuthenticationLoginContext;
 import datrat.ratbridge.bridge.AuthenticationLogout;
 import datrat.ratbridge.bridge.AuthenticationStore;
 import datrat.ratbridge.bridge.AuthenticationStorePaths;
@@ -220,10 +222,7 @@ public final class RatBridgeFabric implements ModInitializer {
     }
 
     private void onPlayerJoined(ServerPlayer player) {
-        AuthenticationDecision decision = bridge.authenticateLogin(
-                player.getGameProfile().getId().toString(),
-                player.getGameProfile().getName()
-        );
+        AuthenticationDecision decision = bridge.authenticateLogin(authenticationLoginContext(player));
         if (!decision.allowed()) {
             authenticationRejectedPlayers.add(player.getGameProfile().getId());
             bridge.onUnauthenticatedLogin(
@@ -241,6 +240,16 @@ public final class RatBridgeFabric implements ModInitializer {
             return;
         }
         bridge.onPlayerLeft(player.getGameProfile().getName());
+    }
+
+    private AuthenticationLoginContext authenticationLoginContext(ServerPlayer player) {
+        GameProfile profile = player.getGameProfile();
+        return new AuthenticationLoginContext(
+                profile.getId().toString(),
+                profile.getName(),
+                player.server.getPlayerList().isWhiteListed(profile),
+                player.server.getPlayerList().getBans().isBanned(profile)
+        );
     }
 
     private AuthenticationStore authenticationStore(MinecraftServer server) {

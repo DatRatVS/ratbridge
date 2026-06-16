@@ -208,14 +208,14 @@ final class BridgeControllerTest {
                 logouts::add
         );
 
-        AuthenticationDecision firstJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        AuthenticationDecision firstJoin = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
         assertFalse(firstJoin.allowed());
         String code = authCode(firstJoin.disconnectMessage());
 
         client.receive(new DiscordInboundMessage("Alex", code, "", "discord-1", "dm-1", true, false));
         assertEquals("Authenticated Steve. You can now join the server.", client.directMessage);
 
-        AuthenticationDecision secondJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        AuthenticationDecision secondJoin = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
         assertTrue(secondJoin.allowed());
 
         client.receive(new DiscordInboundMessage("Alex", "r!logout", "", "discord-1", "dm-1", true, false));
@@ -225,8 +225,101 @@ final class BridgeControllerTest {
         assertEquals("Steve", logouts.get(0).minecraftName());
         assertEquals("Your Minecraft account link was removed. Join the server again to get a new code.", logouts.get(0).disconnectMessage());
 
-        AuthenticationDecision thirdJoin = controller.authenticateLogin("minecraft-uuid", "Steve");
+        AuthenticationDecision thirdJoin = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
         assertFalse(thirdJoin.allowed());
+        controller.stop();
+    }
+
+    @Test
+    void authenticationAllowsConfiguredBypassNamesWithoutLink() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(
+                authConfig(authSettings(List.of("Steve"), false, "false", List.of(), true, false, false)),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+        );
+
+        AuthenticationDecision decision = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
+
+        assertTrue(decision.allowed());
+        controller.stop();
+    }
+
+    @Test
+    void authenticationAllowsWhitelistedPlayersWhenBypassIsEnabled() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(
+                authConfig(authSettings(List.of(), false, "false", List.of(), true, false, false)),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+        );
+
+        AuthenticationDecision decision = controller.authenticateLogin(new AuthenticationLoginContext(
+                "minecraft-uuid",
+                "Steve",
+                true,
+                false
+        ));
+
+        assertTrue(decision.allowed());
+        controller.stop();
+    }
+
+    @Test
+    void authenticationOnlyCheckBannedPlayersBypassesNonBannedPlayers() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+
+        controller.start(
+                authConfig(authSettings(List.of(), false, "false", List.of(), false, false, true)),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                new AuthenticationStore(tempDir.resolve("authentication-users.toml"))
+        );
+
+        AuthenticationDecision nonBanned = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
+        AuthenticationDecision banned = controller.authenticateLogin(new AuthenticationLoginContext(
+                "banned-uuid",
+                "Alex",
+                false,
+                true
+        ));
+
+        assertTrue(nonBanned.allowed());
+        assertFalse(banned.allowed());
+        controller.stop();
+    }
+
+    @Test
+    void authenticationDeniesLinkedAccountWhenDiscordAccessCheckFails() throws Exception {
+        BridgeController controller = new BridgeController();
+        FakeDiscordClient client = new FakeDiscordClient();
+        client.accessResult = AuthenticationAccessResult.deny("No access for %player% / %discord%");
+        AuthenticationStore store = new AuthenticationStore(tempDir.resolve("authentication-users.toml"));
+        store.load();
+        store.link("minecraft-uuid", "Steve", "discord-1", "Alex");
+
+        controller.start(
+                authConfig(authSettings(List.of(), true, "123", List.of(), false, false, false)),
+                message -> { },
+                ServerStatusProvider.empty(),
+                () -> client,
+                store
+        );
+
+        AuthenticationDecision decision = controller.authenticateLogin(login("minecraft-uuid", "Steve"));
+
+        assertFalse(decision.allowed());
+        assertEquals("No access for Steve / Alex", decision.disconnectMessage());
         controller.stop();
     }
 
@@ -365,6 +458,10 @@ final class BridgeControllerTest {
     }
 
     private static BridgeConfig authConfig() {
+        return authConfig(authSettings(List.of(), false, "false", List.of(), true, false, false));
+    }
+
+    private static BridgeConfig authConfig(AuthenticationConfig authentication) {
         return new BridgeConfig(true, "discord", "bot", "abc", "", "123", "456", false,
                 false, "RatBridge",
                 false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
@@ -372,25 +469,54 @@ final class BridgeControllerTest {
                 List.of(),
                 false,
                 List.of(),
-                new AuthenticationConfig(
-                        true,
-                        10,
-                        true,
-                        "{player} needs Discord authentication",
-                        "Code {code} for {player}",
-                        "Authenticated {player}. You can now join the server.",
-                        "Invalid or expired authentication code.",
-                        "That Minecraft or Discord account is already linked to another account.",
-                        "r!logout",
-                        "Your Minecraft account link was removed. Join the server again to get a new code.",
-                        "Your Discord account is not linked to any Minecraft account."
-                ),
+                authentication,
                 DiscordCommandConfig.defaults(),
                 true, true, true,
                 true, true, true, true, true, true,
                 750,
                 "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
                 "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+    }
+
+    private static AuthenticationConfig authSettings(
+            List<String> bypassNames,
+            boolean requireSubscriberRole,
+            String requiredDiscordServers,
+            List<String> subscriberRoles,
+            boolean whitelistedPlayersBypass,
+            boolean checkBannedPlayers,
+            boolean onlyCheckBannedPlayers
+    ) {
+        return new AuthenticationConfig(
+                true,
+                10,
+                bypassNames,
+                whitelistedPlayersBypass,
+                checkBannedPlayers,
+                onlyCheckBannedPlayers,
+                requiredDiscordServers,
+                requireSubscriberRole,
+                subscriberRoles,
+                false,
+                "Missing required role",
+                "Not in server",
+                "Subscriber role not found",
+                "Access check failed",
+                "",
+                true,
+                "{player} needs Discord authentication",
+                "Code {code} for {player}",
+                "Authenticated {player}. You can now join the server.",
+                "Invalid or expired authentication code.",
+                "That Minecraft or Discord account is already linked to another account.",
+                "r!logout",
+                "Your Minecraft account link was removed. Join the server again to get a new code.",
+                "Your Discord account is not linked to any Minecraft account."
+        );
+    }
+
+    private static AuthenticationLoginContext login(String uuid, String name) {
+        return new AuthenticationLoginContext(uuid, name, false, false);
     }
 
     private static String authCode(String message) {
@@ -413,6 +539,7 @@ final class BridgeControllerTest {
         private CompletableFuture<String> nameChannelId = new CompletableFuture<>();
         private CompletableFuture<String> name = new CompletableFuture<>();
         private CompletableFuture<BotPresenceConfig> presence = new CompletableFuture<>();
+        private AuthenticationAccessResult accessResult = AuthenticationAccessResult.allow();
 
         @Override
         public void start(BridgeConfig config, Consumer<DiscordInboundMessage> inboundConsumer) {
@@ -468,6 +595,14 @@ final class BridgeControllerTest {
         public CompletableFuture<Void> updateBotPresence(BotPresenceConfig presence) {
             this.presence.complete(presence);
             return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<AuthenticationAccessResult> verifyAuthenticationAccess(
+                BridgeConfig config,
+                AuthenticationStore.AuthenticatedAccount account
+        ) {
+            return CompletableFuture.completedFuture(accessResult);
         }
 
         private void resetTopicFutures() {

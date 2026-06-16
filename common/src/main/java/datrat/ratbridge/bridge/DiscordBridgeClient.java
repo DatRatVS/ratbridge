@@ -33,6 +33,25 @@ public interface DiscordBridgeClient extends AutoCloseable {
         return CompletableFuture.completedFuture(null);
     }
 
+    default CompletableFuture<AuthenticationAccessResult> verifyAuthenticationAccess(
+            BridgeConfig config,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        AuthenticationConfig authentication = config.authentication();
+        if (!authentication.requiresDiscordAccessCheck()) {
+            return CompletableFuture.completedFuture(AuthenticationAccessResult.allow());
+        }
+        return CompletableFuture.completedFuture(AuthenticationAccessResult.deny(MessageFormatter.format(
+                authentication.roleCheckFailedMessage(),
+                CommonPlaceholders.withRatBridgeVersion(java.util.Map.of(
+                        "player", account.minecraftName(),
+                        "uuid", account.minecraftUuid(),
+                        "discord", account.discordName(),
+                        "invite", authentication.discordInvite()
+                ))
+        )));
+    }
+
     default void sendMessageBlocking(String message, Duration timeout) {
         try {
             sendMessage(message).get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);

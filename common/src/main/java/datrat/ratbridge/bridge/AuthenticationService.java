@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 public final class AuthenticationService {
     private final SecureRandom random = new SecureRandom();
@@ -26,25 +28,88 @@ public final class AuthenticationService {
         pendingCodeByMinecraftUuid.clear();
     }
 
-    public synchronized AuthenticationDecision checkLogin(BridgeConfig config, String minecraftUuid, String minecraftName) {
+    public synchronized AuthenticationDecision checkLogin(
+            BridgeConfig config,
+            AuthenticationLoginContext login,
+            DiscordBridgeClient discordClient
+    ) {
         AuthenticationConfig authentication = config.authentication();
         if (!authentication.enabled() || store == null) {
             return AuthenticationDecision.allow();
         }
 
-        if (store.findByMinecraftUuid(minecraftUuid).isPresent()) {
+        if (bypassesAuthentication(authentication, login)) {
             return AuthenticationDecision.allow();
         }
 
-        String code = codeFor(minecraftUuid, minecraftName, authentication);
+        Optional<AuthenticationStore.AuthenticatedAccount> account = store.findByMinecraftUuid(login.minecraftUuid());
+        if (account.isPresent()) {
+            return verifyLinkedAccount(config, authentication, login, account.get(), discordClient);
+        }
+
+        String code = codeFor(login.minecraftUuid(), login.minecraftName(), authentication);
         String message = MessageFormatter.format(authentication.kickMessage(), CommonPlaceholders.withRatBridgeVersion(Map.of(
-                "player", minecraftName,
-                "uuid", minecraftUuid,
+                "player", login.minecraftName(),
+                "uuid", login.minecraftUuid(),
                 "code", code,
                 "logoutCommand", authentication.logoutCommand(),
                 "logoutcommand", authentication.logoutCommand()
         )));
         return AuthenticationDecision.deny(message);
+    }
+
+    private boolean bypassesAuthentication(AuthenticationConfig authentication, AuthenticationLoginContext login) {
+        String playerName = login.minecraftName().trim().toLowerCase(Locale.ROOT);
+        boolean bypassName = authentication.bypassNames().stream()
+                .map(name -> name.trim().toLowerCase(Locale.ROOT))
+                .anyMatch(playerName::equals);
+        if (bypassName) {
+            return true;
+        }
+        if (authentication.whitelistedPlayersBypass() && login.whitelisted()) {
+            return true;
+        }
+        if (authentication.onlyCheckBannedPlayers()) {
+            return !login.banned();
+        }
+        return !authentication.checkBannedPlayers() && login.banned();
+    }
+
+    private AuthenticationDecision verifyLinkedAccount(
+            BridgeConfig config,
+            AuthenticationConfig authentication,
+            AuthenticationLoginContext login,
+            AuthenticationStore.AuthenticatedAccount account,
+            DiscordBridgeClient discordClient
+    ) {
+        if (!authentication.requiresDiscordAccessCheck()) {
+            return AuthenticationDecision.allow();
+        }
+        if (discordClient == null) {
+            return AuthenticationDecision.deny(formatAccessMessage(authentication.roleCheckFailedMessage(), authentication, login, account));
+        }
+        try {
+            AuthenticationAccessResult result = discordClient.verifyAuthenticationAccess(config, account).get(5, TimeUnit.SECONDS);
+            return result.allowed()
+                    ? AuthenticationDecision.allow()
+                    : AuthenticationDecision.deny(formatAccessMessage(result.denyMessage(), authentication, login, account));
+        } catch (Exception error) {
+            return AuthenticationDecision.deny(formatAccessMessage(authentication.roleCheckFailedMessage(), authentication, login, account));
+        }
+    }
+
+    private String formatAccessMessage(
+            String template,
+            AuthenticationConfig authentication,
+            AuthenticationLoginContext login,
+            AuthenticationStore.AuthenticatedAccount account
+    ) {
+        return MessageFormatter.format(template, CommonPlaceholders.withRatBridgeVersion(Map.of(
+                "player", login.minecraftName(),
+                "uuid", login.minecraftUuid(),
+                "discord", account.discordName(),
+                "invite", authentication.discordInvite()
+        )));
     }
 
     public synchronized Optional<AuthenticationMessageResponse> handlePrivateMessage(BridgeConfig config, DiscordInboundMessage message) {

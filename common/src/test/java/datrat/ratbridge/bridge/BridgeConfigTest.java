@@ -263,7 +263,32 @@ final class BridgeConfigTest {
                 List.of(),
                 false,
                 List.of(),
-                new AuthenticationConfig(true, 0, true, "", "", "", "bad", "linked", "", "out", "none"),
+                new AuthenticationConfig(
+                        true,
+                        0,
+                        List.of(),
+                        true,
+                        false,
+                        false,
+                        "false",
+                        false,
+                        List.of(),
+                        false,
+                        "missing role",
+                        "not in server",
+                        "role not found",
+                        "failed",
+                        "",
+                        true,
+                        "",
+                        "",
+                        "",
+                        "bad",
+                        "linked",
+                        "",
+                        "out",
+                        "none"
+                ),
                 DiscordCommandConfig.defaults(),
                 true, true, true, true, true, true, true, true, true,
                 750,
@@ -278,6 +303,65 @@ final class BridgeConfigTest {
         assertTrue(result.errors().contains("authenticationSuccessMessage is required when authentication is enabled"));
         assertTrue(result.errors().contains("authenticationLogoutCommand is required when authentication is enabled"));
         assertTrue(result.errors().contains("authenticationUnauthenticatedLoginMessage is required when authenticationUnauthenticatedLoginMessageEnabled is true"));
+    }
+
+    @Test
+    void authenticationRoleChecksRequireBotModeGuildContextAndRoles() {
+        BridgeConfig config = new BridgeConfig(true, "discord", "selfbot", "abc", "", "", "456", true,
+                false, "RatBridge",
+                false, "", "Players: %playercount%/%playermax%", "Server is offline", 6,
+                false,
+                List.of(),
+                false,
+                List.of(),
+                new AuthenticationConfig(
+                        true,
+                        10,
+                        List.of(),
+                        true,
+                        false,
+                        false,
+                        "true",
+                        true,
+                        List.of(),
+                        false,
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        true,
+                        "needs auth",
+                        "kick",
+                        "success",
+                        "bad",
+                        "linked",
+                        "r!logout",
+                        "out",
+                        "none"
+                ),
+                DiscordCommandConfig.defaults(),
+                true, true, true, true, true, true, true, true, true,
+                750,
+                "[MC] <{player}> {message}", "[Discord] <{author}> {message}", "[Discord] <{author}> replied to <{replyAuthor}>: {message}", "[MC] {message}",
+                "{player} joined the game", "{player} left the game", "{message}", "{player} has made the advancement [{advancement}]", "Server started", "Server stopping");
+
+        ValidationResult result = config.validate(emptyEnv());
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().contains("Discord server and subscriber role authentication checks require mode = 'bot'"));
+        assertTrue(result.errors().contains("authenticationSubscriberRoles is required when authenticationRequireSubscriberRole is true"));
+        assertTrue(result.errors().contains("authenticationSubscriberRoleKickMessage is required when authenticationRequireSubscriberRole is true"));
+        assertTrue(result.errors().contains("authenticationMissingSubscriberRoleMessage is required when authenticationRequireSubscriberRole is true"));
+        assertTrue(result.errors().contains("authenticationNotInServerMessage is required when Discord server authentication checks are enabled"));
+        assertTrue(result.errors().contains("authenticationRoleCheckFailedMessage is required when Discord server authentication checks are enabled"));
+    }
+
+    @Test
+    void parsesAuthenticationServerLists() {
+        assertTrue(AuthenticationConfig.parseStringList("[]").isEmpty());
+        assertTrue(AuthenticationConfig.parseStringList("").isEmpty());
+        assertTrue(AuthenticationConfig.parseStringList("[\"111\", \"222\"]").containsAll(List.of("111", "222")));
     }
 
     private static BridgeConfig base(String mode, String token, String serverId, String channelId, boolean enableSelfbot) {

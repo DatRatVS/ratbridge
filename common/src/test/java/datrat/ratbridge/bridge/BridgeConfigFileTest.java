@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,6 +43,13 @@ final class BridgeConfigFileTest {
         assertEquals(0, loaded.botPresenceUpdates().size());
         assertEquals(false, loaded.authentication().enabled());
         assertEquals(10, loaded.authentication().codeTtlMinutes());
+        assertEquals(List.of(), loaded.authentication().bypassNames());
+        assertEquals(true, loaded.authentication().whitelistedPlayersBypass());
+        assertEquals(false, loaded.authentication().checkBannedPlayers());
+        assertEquals(false, loaded.authentication().onlyCheckBannedPlayers());
+        assertEquals("false", loaded.authentication().requiredDiscordServers());
+        assertEquals(false, loaded.authentication().requireSubscriberRole());
+        assertEquals(List.of(), loaded.authentication().subscriberRoles());
         assertEquals(true, loaded.authentication().unauthenticatedLoginMessageEnabled());
         assertEquals("%player% tried to join but is not authenticated yet.", loaded.authentication().unauthenticatedLoginMessage());
         assertEquals("r!logout", loaded.authentication().logoutCommand());
@@ -117,6 +125,19 @@ final class BridgeConfigFileTest {
         Files.writeString(configDir.resolve("authentication.toml"), """
                 authenticationEnabled = true
                 authenticationCodeTtlMinutes = 15
+                authenticationBypassNames = ["Steve", "Alex"]
+                authenticationWhitelistedPlayersBypass = false
+                authenticationCheckBannedPlayers = true
+                authenticationOnlyCheckBannedPlayers = true
+                authenticationRequiredDiscordServers = ["111", "222"]
+                authenticationDiscordInvite = "https://discord.gg/example"
+                authenticationRequireSubscriberRole = true
+                authenticationSubscriberRoles = ["333", "444"]
+                authenticationRequireAllSubscriberRoles = true
+                authenticationSubscriberRoleKickMessage = "Needs role"
+                authenticationNotInServerMessage = "Not in server"
+                authenticationMissingSubscriberRoleMessage = "Missing role"
+                authenticationRoleCheckFailedMessage = "Failed check"
                 authenticationUnauthenticatedLoginMessageEnabled = false
                 authenticationUnauthenticatedLoginMessage = "{player} needs auth"
                 authenticationKickMessage = "Use code {code}\\nPlayer {player}"
@@ -172,6 +193,19 @@ final class BridgeConfigFileTest {
         assertEquals("https://twitch.tv/datrat", loaded.botPresenceUpdates().get(1).streamUrl());
         assertEquals(true, loaded.authentication().enabled());
         assertEquals(15, loaded.authentication().codeTtlMinutes());
+        assertEquals(List.of("Steve", "Alex"), loaded.authentication().bypassNames());
+        assertEquals(false, loaded.authentication().whitelistedPlayersBypass());
+        assertEquals(true, loaded.authentication().checkBannedPlayers());
+        assertEquals(true, loaded.authentication().onlyCheckBannedPlayers());
+        assertEquals(List.of("111", "222"), loaded.authentication().requiredDiscordServerIds("fallback"));
+        assertEquals("https://discord.gg/example", loaded.authentication().discordInvite());
+        assertEquals(true, loaded.authentication().requireSubscriberRole());
+        assertEquals(List.of("333", "444"), loaded.authentication().subscriberRoles());
+        assertEquals(true, loaded.authentication().requireAllSubscriberRoles());
+        assertEquals("Needs role", loaded.authentication().subscriberRoleKickMessage());
+        assertEquals("Not in server", loaded.authentication().notInServerMessage());
+        assertEquals("Missing role", loaded.authentication().missingSubscriberRoleMessage());
+        assertEquals("Failed check", loaded.authentication().roleCheckFailedMessage());
         assertEquals(false, loaded.authentication().unauthenticatedLoginMessageEnabled());
         assertEquals("{player} needs auth", loaded.authentication().unauthenticatedLoginMessage());
         assertEquals("Use code {code}\nPlayer {player}", loaded.authentication().kickMessage());
