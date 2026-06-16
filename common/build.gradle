@@ -7,6 +7,43 @@ java {
     withSourcesJar()
 }
 
+def generatedSourcesDir = layout.buildDirectory.dir('generated/sources/ratbridgeInfo/java')
+
+tasks.register('generateRatBridgeInfo') {
+    def outputDir = generatedSourcesDir
+    inputs.property('mod_id', mod_id)
+    inputs.property('mod_name', mod_name)
+    inputs.property('mod_version', mod_version)
+    outputs.dir(outputDir)
+
+    doLast {
+        def packageDir = outputDir.get().asFile.toPath().resolve('datrat/ratbridge')
+        mkdir packageDir
+        packageDir.resolve('RatBridgeInfo.java').toFile().text = """package datrat.ratbridge;
+
+public final class RatBridgeInfo {
+    public static final String MOD_ID = "${mod_id}";
+    public static final String MOD_NAME = "${mod_name}";
+    public static final String VERSION = "${mod_version}";
+    public static final String USER_AGENT = MOD_NAME + "/" + VERSION;
+
+    private RatBridgeInfo() {
+    }
+}
+"""
+    }
+}
+
+sourceSets {
+    main {
+        java.srcDir(generatedSourcesDir)
+    }
+}
+
+tasks.named('compileJava').configure {
+    dependsOn tasks.named('generateRatBridgeInfo')
+}
+
 dependencies {
     implementation("net.dv8tion:JDA:${jda_version}") {
         exclude module: 'opus-java'

@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import datrat.ratbridge.RatBridgeInfo;
 import datrat.ratbridge.bridge.BridgeConfig;
 import datrat.ratbridge.bridge.DiscordBridgeClient;
 import datrat.ratbridge.bridge.DiscordInboundMessage;
@@ -291,7 +292,7 @@ public final class SelfbotDiscordClient implements DiscordBridgeClient {
     private HttpRequest.Builder baseRequest(URI uri) {
         return HttpRequest.newBuilder(uri)
                 .header("Authorization", token)
-                .header("User-Agent", "RatBridge/0.1.18");
+                .header("User-Agent", RatBridgeInfo.USER_AGENT);
     }
 
     private URI channelUri(String suffix) {
